@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, Extension, Json};
 
 use crate::repository::{
     todo::{CreateTodo, Todo, UpdateTodo},
@@ -14,6 +14,37 @@ pub async fn create_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     let todo = repository.create(payload);
 
     (StatusCode::CREATED, Json(todo))
+}
+
+pub async fn find_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
+    Extension(repository): Extension<Arc<T>>,
+    Path(id): Path<i32>,
+) -> Result<impl IntoResponse, StatusCode> {
+    todo!();
+    // コンパイルエラーを通すために一旦 Ok も書く
+    Ok(StatusCode::OK)
+}
+
+pub async fn all_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
+    Extension(repository): Extension<Arc<T>>,
+) -> impl IntoResponse {
+    todo!()
+}
+
+pub async fn update_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
+    Extension(repository): Extension<Arc<T>>,
+    Path(id): Path<i32>,
+    Json(payload): Json<UpdateTodo>,
+) -> Result<impl IntoResponse, StatusCode> {
+    todo!();
+    Ok(StatusCode::OK)
+}
+
+pub async fn delete_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
+    Extension(repository): Extension<Arc<T>>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    todo!()
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
+use axum::{http::StatusCode, response::IntoResponse, Extension, Json, extract::Path};
 
 use crate::repository::{
     user::{CreateUser, UpdateUser, User},
@@ -19,6 +19,37 @@ pub async fn create_user<T: Repository<User, CreateUser, UpdateUser>>(
     // http status は CREATED(201)
     // レスポンスボディは user を JSON にシリアライズしたもの
     (StatusCode::CREATED, Json(user))
+}
+
+pub async fn find_user<T: Repository<User, CreateUser, UpdateUser>>(
+    Extension(repository): Extension<Arc<T>>,
+    Path(id): Path<i32>,
+) -> Result<impl IntoResponse, StatusCode> {
+    todo!();
+    // コンパイルエラーを通すために一旦 Ok も書く
+    Ok(StatusCode::OK)
+}
+
+pub async fn all_user<T: Repository<User, CreateUser, UpdateUser>>(
+    Extension(repository): Extension<Arc<T>>,
+) -> impl IntoResponse {
+    todo!()
+}
+
+pub async fn update_user<T: Repository<User, CreateUser, UpdateUser>>(
+    Extension(repository): Extension<Arc<T>>,
+    Path(id): Path<i32>,
+    Json(payload): Json<UpdateUser>,
+) -> Result<impl IntoResponse, StatusCode> {
+    todo!();
+    Ok(StatusCode::OK)
+}
+
+pub async fn delete_user<T: Repository<User, CreateUser, UpdateUser>>(
+    Extension(repository): Extension<Arc<T>>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    todo!()
 }
 
 #[cfg(test)]
