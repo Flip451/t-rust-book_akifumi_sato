@@ -1,14 +1,29 @@
 pub mod root;
-pub mod users;
+pub mod todo;
+pub mod user;
+
+use std::sync::Arc;
 
 use axum::{
+    extract::Extension,
     routing::{get, post},
     Router,
 };
 use root::index;
-use users::create_user;
+use todo::create_todo;
+use user::create_user;
 
-pub fn create_app() -> Router {
+use crate::repository::{
+    todo::{CreateTodo, Todo, UpdateTodo},
+    user::{CreateUser, UpdateUser, User},
+    Repository,
+};
+
+pub fn create_app<T>(repository: T) -> Router
+where
+    T: Repository<Todo, CreateTodo, UpdateTodo>,
+    T: Repository<User, CreateUser, UpdateUser>,
+{
     // ルーティング設定の作成
     // route メソッドでは
     // 第一引数で URL
@@ -18,5 +33,7 @@ pub fn create_app() -> Router {
     // メソッドチェーンで指定すれば複数のメソッドを指定できる
     Router::new()
         .route("/", get(index))
-        .route("/users", post(create_user))
+        .route("/users", post(create_user::<T>))
+        .route("/todos", post(create_todo::<T>))
+        .layer(Extension(Arc::new(repository)))
 }
