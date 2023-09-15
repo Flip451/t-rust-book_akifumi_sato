@@ -2,7 +2,7 @@ use std::{env, net::SocketAddr};
 
 use anyhow::Result;
 
-use hello_world_axum::routes::create_app;
+use hello_world_axum::{routes::create_app, repository::RepositoryForMemory};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -12,7 +12,8 @@ async fn main() -> Result<()> {
     env::set_var("RUST_LOG", log_level);
     tracing_subscriber::fmt::init();
 
-    let app = create_app();
+    let repository = RepositoryForMemory::new();
+    let app = create_app(repository);
 
     // アドレスとポートの作成
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
