@@ -1,12 +1,8 @@
 use std::{env, net::SocketAddr};
 
 use anyhow::Result;
-use axum::{
-    routing::{get, post},
-    Router,
-};
 
-use hello_world_axum::routes::{root::index, users::create_user};
+use hello_world_axum::routes::create_app;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -16,16 +12,7 @@ async fn main() -> Result<()> {
     env::set_var("RUST_LOG", log_level);
     tracing_subscriber::fmt::init();
 
-    // ルーティング設定の作成
-    // route メソッドでは
-    // 第一引数で URL
-    // 第二引数で、URL にマッチしたときに呼び出す関数を定義
-    // 第二引数に渡す関数は、get(...) などでラップして HTTP メソッドを指定する
-    // get(get_handler).post(post_handler) のように
-    // メソッドチェーンで指定すれば複数のメソッドを指定できる
-    let app = Router::new()
-        .route("/", get(index))
-        .route("/users", post(create_user));
+    let app = create_app();
 
     // アドレスとポートの作成
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
