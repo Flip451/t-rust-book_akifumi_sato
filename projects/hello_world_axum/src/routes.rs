@@ -4,13 +4,24 @@ pub mod user;
 
 use std::sync::Arc;
 
-use axum::{extract::Extension, routing::get, Router};
-
 use crate::repository::{
     todo::{CreateTodo, Todo, UpdateTodo},
     user::{CreateUser, UpdateUser, User},
     Repository,
 };
+
+use axum::{
+    async_trait,
+    body::HttpBody,
+    extract::{Extension, FromRequest},
+    http::{self, StatusCode},
+    routing::get,
+    BoxError, Json, Router,
+};
+
+use hyper::Request;
+use serde::de::DeserializeOwned;
+use validator::Validate;
 
 use self::root::index;
 use self::todo::{all_todo, create_todo, delete_todo, find_todo, update_todo};
@@ -45,7 +56,41 @@ where
                 .delete(delete_todo::<T>),
         )
         .layer(Extension(Arc::new(repository)))
-        // .with_state(Arc::new(repository))
+    // .with_state(Arc::new(repository))
+}
+
+// バリデーションへの対応
+#[derive(Debug)]
+pub struct ValidatedJson<T>(T);
+
+#[async_trait]
+impl<S, B, T> FromRequest<S, B> for ValidatedJson<T>
+where
+    B: Send + 'static + HttpBody,
+    B::Data: Send,
+    B::Error: Into<BoxError>,
+    S: Send + Sync,
+    T: DeserializeOwned + Validate,
+{
+    type Rejection = (http::StatusCode, String);
+
+    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+        // Json のパースを実行
+        let Json(value) = Json::<T>::from_request(req, state)
+            .await
+            .map_err(|rejection| {
+                let message = format!("Json parse error: [{}]", rejection);
+                (StatusCode::BAD_REQUEST, message)
+            })?;
+
+        // バリデーションを実行
+        value.validate().map_err(|rejection| {
+            let message = format!("Validation error: [{}]", rejection);
+            (StatusCode::BAD_REQUEST, message)
+        })?;
+
+        Ok(ValidatedJson(value))
+    }
 }
 
 #[cfg(test)]
