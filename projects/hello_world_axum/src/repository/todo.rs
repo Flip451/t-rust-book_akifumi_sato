@@ -1,5 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 use super::{DbRecord, Repository, RepositoryError, RepositoryForMemory};
 
@@ -44,8 +45,10 @@ impl Ord for Todo {
 }
 
 // Clone は axum の共有状態として利用するために必要
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Validate)]
 pub struct CreateTodo {
+    #[validate(length(min = 1, message = "Can not be empty"))]
+    #[validate(length(max = 1, message = "Over text length"))]
     text: String,
 }
 
@@ -59,8 +62,10 @@ impl CreateTodo {
 // Clone は axum の共有状態として利用するために必要
 // 更新時は、一部の要素のみ値を変更する可能性があるので
 // 各要素は Option でラップ
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Validate)]
 pub struct UpdateTodo {
+    #[validate(length(min = 1, message = "Can not be empty"))]
+    #[validate(length(max = 1, message = "Over text length"))]
     text: Option<String>,
     completed: Option<bool>,
 }
