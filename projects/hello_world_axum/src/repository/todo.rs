@@ -21,10 +21,39 @@ impl Todo {
     }
 }
 
+#[cfg(test)]
+impl PartialOrd for Todo {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.id.partial_cmp(&other.id) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        match self.text.partial_cmp(&other.text) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.completed.partial_cmp(&other.completed)
+    }
+}
+
+#[cfg(test)]
+impl Ord for Todo {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
 // Clone は axum の共有状態として利用するために必要
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CreateTodo {
     text: String,
+}
+
+#[cfg(test)]
+impl CreateTodo {
+    pub fn new(text: String) -> Self {
+        Self { text }
+    }
 }
 
 // Clone は axum の共有状態として利用するために必要
@@ -153,7 +182,10 @@ mod tests {
 
         // delete
         // フルパス記法（the book 19 章参照）を使用していることに注意
-        let res = <RepositoryForMemory as Repository<Todo, CreateTodo, UpdateTodo>>::delete(&repository, id);
+        let res = <RepositoryForMemory as Repository<Todo, CreateTodo, UpdateTodo>>::delete(
+            &repository,
+            id,
+        );
         assert!(res.is_ok());
     }
 }
