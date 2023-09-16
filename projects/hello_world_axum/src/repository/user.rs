@@ -24,6 +24,24 @@ impl User {
     }
 }
 
+#[cfg(test)]
+impl PartialOrd for User {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.id.partial_cmp(&other.id) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.username.partial_cmp(&other.username)
+    }
+}
+
+#[cfg(test)]
+impl Ord for User {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
 // `CreateUser` は `User` を作成するときに受け取るリクエストの内容
 // つまり、クライアント側から、JSON 文字列として受け取ったデータを
 // Rust の構造体に変換できる必要がある

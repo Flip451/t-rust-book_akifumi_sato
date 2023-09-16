@@ -25,15 +25,15 @@ pub async fn find_user<T: Repository<User, CreateUser, UpdateUser>>(
     Extension(repository): Extension<Arc<T>>,
     Path(id): Path<i32>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    todo!();
-    // コンパイルエラーを通すために一旦 Ok も書く
-    Ok(StatusCode::OK)
+    let user = repository.find(id).ok_or(StatusCode::NOT_FOUND)?;
+    Ok((StatusCode::OK, Json(user)))
 }
 
 pub async fn all_user<T: Repository<User, CreateUser, UpdateUser>>(
     Extension(repository): Extension<Arc<T>>,
 ) -> impl IntoResponse {
-    todo!()
+    let users = repository.all();
+    (StatusCode::OK, Json(users))
 }
 
 pub async fn update_user<T: Repository<User, CreateUser, UpdateUser>>(
@@ -41,15 +41,20 @@ pub async fn update_user<T: Repository<User, CreateUser, UpdateUser>>(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateUser>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    todo!();
-    Ok(StatusCode::OK)
+    let user = repository
+        .update(id, payload)
+        .or(Err(StatusCode::NOT_FOUND))?;
+    Ok((StatusCode::OK, Json(user)))
 }
 
 pub async fn delete_user<T: Repository<User, CreateUser, UpdateUser>>(
     Extension(repository): Extension<Arc<T>>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    todo!()
+    match repository.delete(id) {
+        Ok(_) => StatusCode::NO_CONTENT,
+        Err(_) => StatusCode::NOT_FOUND,
+    }
 }
 
 #[cfg(test)]
@@ -141,10 +146,11 @@ mod tests {
         let res = create_app(repository).oneshot(req).await?;
 
         // レスポンスで json として返ってきたデータから User 構造体をデシリアライズ
-        let user: Vec<User> = res_to_struct(res).await?;
+        let mut users: Vec<User> = res_to_struct(res).await?;
+        users.sort();
 
         // 期待通りの結果を確認
-        assert_eq!(expected, user);
+        assert_eq!(expected, users);
 
         Ok(())
     }
@@ -161,7 +167,7 @@ mod tests {
         // リクエストボディを作成
         let request_body = r#"{
     "id": 1,
-    "username": "佐藤 一郎",
+    "username": "佐藤 一郎"
 }"#
         .to_string();
 
