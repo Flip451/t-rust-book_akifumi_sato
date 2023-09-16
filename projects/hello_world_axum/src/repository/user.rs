@@ -1,5 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 use super::{DbRecord, Repository, RepositoryError, RepositoryForMemory};
 
@@ -45,8 +46,10 @@ impl Ord for User {
 // `CreateUser` は `User` を作成するときに受け取るリクエストの内容
 // つまり、クライアント側から、JSON 文字列として受け取ったデータを
 // Rust の構造体に変換できる必要がある
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Eq, Validate)]
 pub struct CreateUser {
+    #[validate(length(min = 1, message = "Can not be empty"))]
+    #[validate(length(max = 15, message = "Over name length"))]
     username: String,
 }
 
@@ -57,8 +60,10 @@ impl CreateUser {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Eq, Validate)]
 pub struct UpdateUser {
+    #[validate(length(min = 1, message = "Can not be empty"))]
+    #[validate(length(max = 15, message = "Over name length"))]
     username: Option<String>,
 }
 

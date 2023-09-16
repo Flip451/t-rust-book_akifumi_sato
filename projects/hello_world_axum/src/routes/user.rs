@@ -7,9 +7,11 @@ use crate::repository::{
     Repository,
 };
 
+use super::ValidatedJson;
+
 pub async fn create_user<T: Repository<User, CreateUser, UpdateUser>>(
     Extension(repository): Extension<Arc<T>>,
-    Json(payload): Json<CreateUser>,
+    ValidatedJson(payload): ValidatedJson<CreateUser>,
 ) -> impl IntoResponse {
     let user = repository.create(payload);
 
@@ -39,7 +41,7 @@ pub async fn all_user<T: Repository<User, CreateUser, UpdateUser>>(
 pub async fn update_user<T: Repository<User, CreateUser, UpdateUser>>(
     Extension(repository): Extension<Arc<T>>,
     Path(id): Path<i32>,
-    Json(payload): Json<UpdateUser>,
+    ValidatedJson(payload): ValidatedJson<UpdateUser>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let user = repository
         .update(id, payload)
