@@ -7,9 +7,29 @@ use crate::repository::{
     Repository,
 };
 
+use super::ValidatedJson;
+
+// 関数を Handler として使用するための条件は、
+// <https://docs.rs/axum/latest/axum/handler/index.html#debugging-handler-type-errors>
+// を参照
+//
+// Handler として不適格な関数を用いようとしても、Rust のコンパイラはあまり豊かなエラーメッセージを返してくれないので注意
+//      `axum-macros` クレートを追加して、関数を `#[debug_handler]` で注釈すると、エラーをくれる量が増えるらしいが
+//      関数にジェネリック型があるとうまく動かなかったりするので現時点では微妙
+// 
+// 条件は以下の通り：
+// - async 関数である
+// - 引数は 16 個以下で、すべてが `FromRequest` を実装する
+// - `IntoResponse` を実装するものを返す
+// - クロージャを使用する場合は、 Clone + Send を実装し、'static である必要がある
+// - `Send` の future を返却する
+// 
+// 以下、Handler の定義
+//      これらの関数は、Router::new() とともに用いて、
+//      クライアントからのアクセスに対してアプリケーションが実行する処理を記述する
 pub async fn create_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     Extension(repository): Extension<Arc<T>>,
-    Json(payload): Json<CreateTodo>,
+    ValidatedJson(payload): ValidatedJson<CreateTodo>,
 ) -> impl IntoResponse {
     let todo = repository.create(payload);
 
@@ -34,7 +54,7 @@ pub async fn all_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
 pub async fn update_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     Extension(repository): Extension<Arc<T>>,
     Path(id): Path<i32>,
-    Json(payload): Json<UpdateTodo>,
+    ValidatedJson(payload): ValidatedJson<UpdateTodo>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let todo = repository
         .update(id, payload)
