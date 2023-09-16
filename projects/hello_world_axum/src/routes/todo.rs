@@ -57,36 +57,31 @@ mod tests {
     };
     use tower::ServiceExt;
 
-    use crate::{repository::RepositoryForMemory, routes::create_app};
+    use crate::routes::tests::build_req_with_json;
+    use crate::{
+        repository::RepositoryForMemory,
+        routes::{create_app, tests::res_to_struct},
+    };
 
     #[tokio::test]
     async fn should_return_todo_data() -> Result<()> {
         let repository = RepositoryForMemory::new();
 
-        let create_todo = serde_json::to_string(&Todo::new(1, "test".to_string()))?;
+        let expected = Todo::new(1, "test".to_string());
+        let request_body = serde_json::to_string(&expected)?;
 
         // POST: /todos へのリクエストを作成
-        // GET メソッド以外の場合はメソッドを明示する必要がある
-        // また、レスポンスボディのコンテンツタイプとして mime::APPLICATION_JSON.as_ref() を指定する
-        let req = Request::builder()
-            .uri("/todos")
-            .method(Method::POST)
-            .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-            .body(Body::from(create_todo))?;
+        let req = build_req_with_json("/todos", Method::POST, request_body)?;
 
         // POST: /todos に対するレスポンスを取得
         // `use tower::ServiceExt;` により Router::oneshot メソッドが使えるようになっている
         // oneshot は、リクエストを渡すと一度だけハンドリングを行ってレスポンスを生成してくれる
         let res = create_app(repository).oneshot(req).await?;
 
-        // レスポンス型から Bytes 型を経て String 型のレスポンスボディを取得
-        let bytes = hyper::body::to_bytes(res.into_body()).await?;
-        let body = String::from_utf8(bytes.to_vec())?;
-
         // serde_json::from_str を用いてレスポンスボディをデシリアライズ
-        let todo: Todo = serde_json::from_str(&body).expect("cannnot cover User instance.");
+        let todo: Todo = res_to_struct(res).await?;
 
-        assert_eq!(todo, Todo::new(1, "test".to_string()));
+        assert_eq!(todo, expected);
 
         Ok(())
     }

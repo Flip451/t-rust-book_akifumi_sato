@@ -6,16 +6,16 @@ pub async fn index() -> &'static str {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use axum::{body::Body, http::Request};
+    use axum::http::Method;
     use tower::ServiceExt;
-    use crate::{routes::create_app, repository::RepositoryForMemory};
+    use crate::{routes::{create_app, tests::build_req_with_empty}, repository::RepositoryForMemory};
 
     #[tokio::test]
     async fn should_return_hello_world() -> Result<()> {
         let repository = RepositoryForMemory::new();
 
         // GET: / へのリクエストを作成
-        let req = Request::builder().uri("/").body(Body::empty())?;
+        let req = build_req_with_empty("/", Method::GET)?;
 
         // GET: / に対するレスポンスを取得
         // `use tower::ServiceExt;` により Router::oneshot メソッドが使えるようになっている

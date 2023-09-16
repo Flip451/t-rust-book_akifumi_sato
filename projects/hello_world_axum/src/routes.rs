@@ -46,3 +46,49 @@ where
         )
         .layer(Extension(Arc::new(repository)))
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use axum::{
+        body::Body,
+        http::{header, Method, Request},
+        response::Response,
+    };
+    use serde::de::DeserializeOwned;
+
+    pub fn build_req_with_json(
+        uri: &str,
+        method: Method,
+        json_body_string: String,
+    ) -> Result<Request<Body>> {
+        let req = Request::builder()
+            .uri(uri)
+            .method(method)
+            .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+            .body(Body::from(json_body_string))?;
+        Ok(req)
+    }
+
+    pub fn build_req_with_empty(uri: &str, method: Method) -> Result<Request<Body>> {
+        let req = Request::builder()
+            .uri(uri)
+            .method(method)
+            .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+            .body(Body::empty())?;
+        Ok(req)
+    }
+
+    pub async fn res_to_struct<T>(res: Response) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        let bytes = hyper::body::to_bytes(res.into_body()).await?;
+        let body = String::from_utf8(bytes.to_vec())?;
+
+        // serde_json::from_str を用いてレスポンスボディをデシリアライズ
+        let data: T =
+            serde_json::from_str(&body).expect(&format!("cannot convert instance. body: {}", body));
+        Ok(data)
+    }
+}
