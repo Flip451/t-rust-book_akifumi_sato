@@ -27,6 +27,13 @@ pub struct CreateTodo {
     text: String,
 }
 
+#[cfg(test)]
+impl CreateTodo {
+    pub fn new(text: String) -> Self {
+        Self { text }
+    }
+}
+
 // Clone は axum の共有状態として利用するために必要
 // 更新時は、一部の要素のみ値を変更する可能性があるので
 // 各要素は Option でラップ

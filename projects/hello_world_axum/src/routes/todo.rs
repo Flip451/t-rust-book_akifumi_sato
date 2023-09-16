@@ -51,37 +51,144 @@ pub async fn delete_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
 mod tests {
     use super::*;
     use anyhow::Result;
-    use axum::{
-        body::Body,
-        http::{header, Method, Request},
-    };
+    use axum::http::Method;
     use tower::ServiceExt;
 
-    use crate::routes::tests::build_req_with_json;
+    use crate::routes::tests::{build_req_with_empty, build_req_with_json};
     use crate::{
         repository::RepositoryForMemory,
         routes::{create_app, tests::res_to_struct},
     };
 
     #[tokio::test]
-    async fn should_return_todo_data() -> Result<()> {
+    async fn should_create_todo() -> Result<()> {
+        let expected = Todo::new(1, "should create todo".to_string());
+
+        // リポジトリを作成
         let repository = RepositoryForMemory::new();
 
-        let expected = Todo::new(1, "test".to_string());
-        let request_body = serde_json::to_string(&expected)?;
+        // リクエストボディを作成
+        let request_body = r#"{"text": "should create todo"}"#.to_string();
+        println!("request_body: {}", request_body);
 
         // POST: /todos へのリクエストを作成
         let req = build_req_with_json("/todos", Method::POST, request_body)?;
 
-        // POST: /todos に対するレスポンスを取得
-        // `use tower::ServiceExt;` により Router::oneshot メソッドが使えるようになっている
-        // oneshot は、リクエストを渡すと一度だけハンドリングを行ってレスポンスを生成してくれる
+        // POST: /todos に対するリクエストを送信してレスポンスを取得
+        //      `use tower::ServiceExt;` により Router::oneshot メソッドが使えるようになっている
+        //      oneshot は、リクエストを渡すと一度だけハンドリングを行ってレスポンスを生成してくれる
         let res = create_app(repository).oneshot(req).await?;
 
-        // serde_json::from_str を用いてレスポンスボディをデシリアライズ
+        // レスポンスで json として返ってきたデータから Todo 構造体をデシリアライズ
         let todo: Todo = res_to_struct(res).await?;
 
+        // 結果が期待通りか確認
         assert_eq!(todo, expected);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_find_todo() -> Result<()> {
+        let expected = Todo::new(1, "should find todo.".to_string());
+
+        // リポジトリを作成
+        let repository = RepositoryForMemory::new();
+        // リポジトリに直接データを作成
+        repository.create(CreateTodo::new("should find todo.".to_string()));
+
+        // リクエストを作成
+        let req = build_req_with_empty("/todos/1", Method::GET)?;
+
+        // リクエストを送信してレスポンスを取得
+        let res = create_app(repository).oneshot(req).await?;
+
+        // レスポンスで json として返ってきたデータから Todo 構造体をデシリアライズ
+        let todo = res_to_struct(res).await?;
+
+        // 期待通りの結果を確認
+        assert_eq!(expected, todo);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_get_all_todos() -> Result<()> {
+        let expected = vec![
+            Todo::new(1, "should get todo-1.".to_string()),
+            Todo::new(2, "should get todo-2.".to_string()),
+            Todo::new(3, "should get todo-3.".to_string()),
+        ];
+
+        // リポジトリを作成
+        let repository = RepositoryForMemory::new();
+        // リポジトリに直接データを作成
+        repository.create(CreateTodo::new("should get todo-1.".to_string()));
+        repository.create(CreateTodo::new("should get todo-2.".to_string()));
+        repository.create(CreateTodo::new("should get todo-3.".to_string()));
+
+        // リクエストを作成
+        let req = build_req_with_empty("/todos", Method::GET)?;
+
+        // リクエストを送信してレスポンスを取得
+        let res = create_app(repository).oneshot(req).await?;
+
+        // レスポンスで json として返ってきたデータから Todo 構造体をデシリアライズ
+        let todo: Vec<Todo> = res_to_struct(res).await?;
+
+        // 期待通りの結果を確認
+        assert_eq!(expected, todo);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_update_todo() -> Result<()> {
+        let expected = Todo::new(1, "should update todo-1".to_string());
+
+        // リポジトリを作成
+        let repository = RepositoryForMemory::new();
+        // リポジトリに直接データを作成
+        repository.create(CreateTodo::new("should create todo-1.".to_string()));
+
+        // リクエストボディを作成
+        let request_body = r#"{
+    "id": 1,
+    "text": "should update todo-1",
+    "completed": false
+}"#
+        .to_string();
+
+        // リクエストを作成
+        let req = build_req_with_json("/todos/1", Method::PATCH, request_body)?;
+
+        // リクエストを送信してレスポンスを取得
+        let res = create_app(repository).oneshot(req).await?;
+
+        // レスポンスで json として返ってきたデータから Todo 構造体をデシリアライズ
+        let todo = res_to_struct(res).await?;
+
+        // 期待通りの結果を確認
+        assert_eq!(expected, todo);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_delete_todo() -> Result<()> {
+        // リポジトリを作成
+        let repository = RepositoryForMemory::new();
+        // リポジトリに直接データを作成
+        repository.create(CreateTodo::new("should delete todo.".to_string()));
+
+        // リクエストを作成
+        let req = build_req_with_empty("/todos/1", Method::DELETE)?;
+
+        // リクエストを送信してレスポンスを取得
+        let res = create_app(repository).oneshot(req).await?;
+
+        // 期待通りの結果を確認
+        assert_eq!(StatusCode::NO_CONTENT, res.status());
 
         Ok(())
     }

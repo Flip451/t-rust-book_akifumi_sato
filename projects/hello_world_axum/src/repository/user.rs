@@ -32,6 +32,13 @@ pub struct CreateUser {
     username: String,
 }
 
+#[cfg(test)]
+impl CreateUser {
+    pub fn new(username: String) -> Self {
+        Self { username }
+    }
+}
+
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Eq)]
 pub struct UpdateUser {
     username: Option<String>,
@@ -133,13 +140,7 @@ mod tests {
                 },
             )
             .expect("failed to update user.");
-        assert_eq!(
-            User {
-                id: 1,
-                username,
-            },
-            user
-        );
+        assert_eq!(User { id: 1, username }, user);
 
         // delete
         // フルパス記法（the book 19 章参照）を使用していることに注意
