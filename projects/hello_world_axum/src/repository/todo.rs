@@ -48,7 +48,7 @@ impl Ord for Todo {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Validate)]
 pub struct CreateTodo {
     #[validate(length(min = 1, message = "Can not be empty"))]
-    #[validate(length(max = 1, message = "Over text length"))]
+    #[validate(length(max = 100, message = "Over text length"))]
     text: String,
 }
 
@@ -65,7 +65,7 @@ impl CreateTodo {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Validate)]
 pub struct UpdateTodo {
     #[validate(length(min = 1, message = "Can not be empty"))]
-    #[validate(length(max = 1, message = "Over text length"))]
+    #[validate(length(max = 100, message = "Over text length"))]
     text: Option<String>,
     completed: Option<bool>,
 }

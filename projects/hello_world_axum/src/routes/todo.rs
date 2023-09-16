@@ -1,15 +1,72 @@
 use std::sync::Arc;
 
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, Extension, Json};
+use axum::{
+    async_trait,
+    body::HttpBody,
+    extract::{FromRequest, Path},
+    http::{self, StatusCode},
+    response::IntoResponse,
+    BoxError, Extension, Json,
+};
+use hyper::Request;
+use serde::de::DeserializeOwned;
+use validator::Validate;
 
 use crate::repository::{
     todo::{CreateTodo, Todo, UpdateTodo},
     Repository,
 };
 
+#[derive(Debug)]
+pub struct ValidatedJson<T>(T);
+
+#[async_trait]
+impl<S, B, T> FromRequest<S, B> for ValidatedJson<T>
+where
+    B: Send + 'static + HttpBody,
+    B::Data: Send,
+    B::Error: Into<BoxError>,
+    S: Send + Sync,
+    T: DeserializeOwned + Validate,
+{
+    type Rejection = (http::StatusCode, String);
+
+    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+        // Json のパースを実行
+        let Json(value) = Json::<T>::from_request(req, state)
+            .await
+            .map_err(|rejection| {
+                let message = format!("Json parse error: [{}]", rejection);
+                (StatusCode::BAD_REQUEST, message)
+            })?;
+
+        // バリデーションを実行
+        value.validate().map_err(|rejection| {
+            let message = format!("Validation error: [{}]", rejection);
+            (StatusCode::BAD_REQUEST, message)
+        })?;
+
+        Ok(ValidatedJson(value))
+    }
+}
+
+// 関数を Handler として使用するための条件は、
+// <https://docs.rs/axum/latest/axum/handler/index.html#debugging-handler-type-errors>
+// を参照
+// 
+// Handler として不適格な関数を用いようとしても、Rust のコンパイラはあまり豊かなエラーメッセージを返してくれないので注意
+//      `axum-macros` クレートを追加して、関数を `#[debug_handler]` で注釈すると、エラーをくれる量が増えるらしいが
+//      関数にジェネリック型があるとうまく動かなかったりするので現時点では微妙
+// 条件は以下の通り：
+// - async 関数である
+// - 引数は 16 個以下で、すべてが `FromRequest` を実装する
+// - `IntoResponse` を実装するものを返す
+// - クロージャを使用する場合は、 Clone + Send を実装し、'static である必要がある
+// - `Send` の future を返却する
+
 pub async fn create_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     Extension(repository): Extension<Arc<T>>,
-    Json(payload): Json<CreateTodo>,
+    ValidatedJson(payload): ValidatedJson<CreateTodo>,
 ) -> impl IntoResponse {
     let todo = repository.create(payload);
 
@@ -34,7 +91,7 @@ pub async fn all_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
 pub async fn update_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     Extension(repository): Extension<Arc<T>>,
     Path(id): Path<i32>,
-    Json(payload): Json<UpdateTodo>,
+    ValidatedJson(payload): ValidatedJson<UpdateTodo>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let todo = repository
         .update(id, payload)

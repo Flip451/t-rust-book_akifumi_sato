@@ -45,6 +45,7 @@ where
                 .delete(delete_todo::<T>),
         )
         .layer(Extension(Arc::new(repository)))
+        // .with_state(Arc::new(repository))
 }
 
 #[cfg(test)]
