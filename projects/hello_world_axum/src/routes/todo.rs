@@ -20,15 +20,15 @@ pub async fn find_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     Extension(repository): Extension<Arc<T>>,
     Path(id): Path<i32>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    todo!();
-    // コンパイルエラーを通すために一旦 Ok も書く
-    Ok(StatusCode::OK)
+    let todo = repository.find(id).ok_or(StatusCode::NOT_FOUND)?;
+    Ok((StatusCode::OK, Json(todo)))
 }
 
 pub async fn all_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     Extension(repository): Extension<Arc<T>>,
 ) -> impl IntoResponse {
-    todo!()
+    let todos = repository.all();
+    (StatusCode::OK, Json(todos))
 }
 
 pub async fn update_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
@@ -36,15 +36,20 @@ pub async fn update_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateTodo>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    todo!();
-    Ok(StatusCode::OK)
+    let todo = repository
+        .update(id, payload)
+        .or(Err(StatusCode::NOT_FOUND))?;
+    Ok((StatusCode::OK, Json(todo)))
 }
 
 pub async fn delete_todo<T: Repository<Todo, CreateTodo, UpdateTodo>>(
     Extension(repository): Extension<Arc<T>>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    todo!()
+    match repository.delete(id) {
+        Ok(_) => StatusCode::NO_CONTENT,
+        Err(_) => StatusCode::NOT_FOUND,
+    }
 }
 
 #[cfg(test)]
@@ -134,7 +139,8 @@ mod tests {
         let res = create_app(repository).oneshot(req).await?;
 
         // レスポンスで json として返ってきたデータから Todo 構造体をデシリアライズ
-        let todo: Vec<Todo> = res_to_struct(res).await?;
+        let mut todo: Vec<Todo> = res_to_struct(res).await?;
+        todo.sort();
 
         // 期待通りの結果を確認
         assert_eq!(expected, todo);
