@@ -93,6 +93,7 @@ where
     }
 }
 
+// テスト用のユーティリティ関数を定義
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
