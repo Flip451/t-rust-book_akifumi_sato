@@ -209,7 +209,7 @@ cargo add axum tower mime serde_json tracing anyhow thiserror
   }
   ```
 
-- `/users` に POST メソッドで JSON が送られてきた際の処理を定義する関数本体を実装
+- `/users` に POST メソッドで JSON が送られてきた際の処理を定義する関数を実装
 
   **`src/routes/users.rs`**
 
@@ -233,7 +233,7 @@ cargo add axum tower mime serde_json tracing anyhow thiserror
   // CreateUser と同じ構造の JSON が送られてきたら
   // User と同じ構造の JSON を送り返すメソッドを定義
   // `src/routes.rs` で利用できるように返り値の型には、`IntoResponse` を実装する型を指定
-  // (StatusCode, Json<T>) はこれを実装する型の一つ
+  // axum 内で (StatusCode, T) に対して IntoResponse が実装されている
   pub async fn create(Json(payload): Json<CreateUser>) -> impl IntoResponse {
       let user = User {
           id: 1337,
