@@ -8,7 +8,8 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(id: UserId, user_name: UserName) -> Self {
+    pub fn new(user_name: UserName) -> Self {
+        let id: UserId = Uuid::new_v4();
         Self { id, user_name }
     }
 }

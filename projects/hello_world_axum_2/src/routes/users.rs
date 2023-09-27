@@ -1,6 +1,5 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::models::users::*;
 
@@ -10,9 +9,8 @@ pub struct CreateUser {
 }
 
 pub async fn create(Json(payload): Json<CreateUser>) -> impl IntoResponse {
-    let user_id: UserId = Uuid::new_v4();
     let user_name = UserName::new(&payload.user_name);
-    let user = User::new(user_id, user_name);
+    let user = User::new(user_name);
     (StatusCode::CREATED, Json(user))
 }
 

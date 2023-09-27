@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Todo {
     id: TodoId,
     text: TodoText,
@@ -7,7 +9,8 @@ pub struct Todo {
 }
 
 impl Todo {
-    pub fn new(id: TodoId, text: TodoText) -> Self {
+    pub fn new(text: TodoText) -> Self {
+        let id: TodoId = Uuid::new_v4();
         Self {
             id,
             text,
@@ -24,6 +27,15 @@ impl PartialEq for Todo {
 
 pub type TodoId = Uuid;
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TodoText {
     value: String,
+}
+
+impl TodoText {
+    pub fn new(s: &str) -> Self {
+        Self {
+            value: s.to_string(),
+        }
+    }
 }
