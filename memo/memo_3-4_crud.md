@@ -27,7 +27,8 @@
   }
 
   impl User {
-      pub fn new(id: UserId, user_name: UserName) -> Self {
+      pub fn new(user_name: UserName) -> Self {
+          let id: UserId = Uuid::new_v4();
           Self { id, user_name }
       }
   }
@@ -70,7 +71,6 @@
   ```rust
   use axum::{http::StatusCode, response::IntoResponse, Json};
   use serde::{Deserialize, Serialize};
-  use uuid::Uuid;
 
   use crate::models::users::*;
 
@@ -80,9 +80,8 @@
   }
 
   pub async fn create(Json(payload): Json<CreateUser>) -> impl IntoResponse {
-      let user_id: UserId = Uuid::new_v4();
       let user_name = UserName::new(&payload.user_name);
-      let user = User::new(user_id, user_name);
+      let user = User::new(user_name);
       (StatusCode::CREATED, Json(user))
   }
 
@@ -226,8 +225,10 @@
   **`src/models/todos.rs`**
 
   ```rust
+  use serde::{Deserialize, Serialize};
   use uuid::Uuid;
 
+  #[derive(Clone, Debug, Deserialize, Serialize)]
   pub struct Todo {
       id: TodoId,
       text: TodoText,
@@ -235,7 +236,8 @@
   }
 
   impl Todo {
-      pub fn new(id: TodoId, text: TodoText) -> Self {
+      pub fn new(text: TodoText) -> Self {
+          let id: TodoId = Uuid::new_v4();
           Self {
               id,
               text,
@@ -252,8 +254,17 @@
 
   pub type TodoId = Uuid;
 
+  #[derive(Clone, Debug, Deserialize, Serialize)]
   pub struct TodoText {
       value: String,
+  }
+
+  impl TodoText {
+      pub fn new(s: &str) -> Self {
+          Self {
+              value: s.to_string(),
+          }
+      }
   }
   ```
 
@@ -289,13 +300,13 @@
   use crate::models::todos::*;
 
   pub trait ITodoRepository {
-      fn save(&self, todo: Todo) -> Result<Todo>;
-      fn find(&self, todo_id: TodoId) -> Todo;
+      fn save(&self, todo: &Todo) -> Result<Todo>;
+      fn find(&self, todo_id: TodoId) -> Option<Todo>;
       fn find_all(&self) -> Vec<Todo>;
       fn delete(&self, todo: Todo) -> Result<()>;
   }
 
-  mod in_memory_todo_repository {
+  pub mod in_memory_todo_repository {
       use std::{
           collections::HashMap,
           sync::{Arc, RwLock},
@@ -303,7 +314,7 @@
 
       use super::*;
 
-      struct InMemoryTodoRepository {
+      pub struct InMemoryTodoRepository {
           store: Arc<RwLock<HashMap<TodoId, Todo>>>,
       }
 
@@ -316,11 +327,11 @@
       }
 
       impl ITodoRepository for InMemoryTodoRepository {
-          fn save(&self, todo: Todo) -> Result<Todo> {
+          fn save(&self, todo: &Todo) -> Result<Todo> {
               todo!()
           }
 
-          fn find(&self, todo_id: TodoId) -> Todo {
+          fn find(&self, todo_id: TodoId) -> Option<Todo> {
               todo!()
           }
 

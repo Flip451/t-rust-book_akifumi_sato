@@ -3,8 +3,8 @@ use anyhow::Result;
 use crate::models::users::*;
 
 pub trait IUserRepository {
-    fn save(&self, user: User) -> Result<User>;
-    fn find(&self, user_id: UserId) -> User;
+    fn save(&self, user: &User) -> Result<User>;
+    fn find(&self, user_id: UserId) -> Option<User>;
     fn find_all(&self) -> Vec<User>;
     fn delete(&self, user: User) -> Result<()>;
 }
@@ -30,11 +30,11 @@ mod in_memory_user_repository {
     }
 
     impl IUserRepository for InMemoryUserRepository {
-        fn save(&self, user: User) -> Result<User> {
+        fn save(&self, user: &User) -> Result<User> {
             todo!()
         }
 
-        fn find(&self, user_id: UserId) -> User {
+        fn find(&self, user_id: UserId) -> Option<User> {
             todo!()
         }
 

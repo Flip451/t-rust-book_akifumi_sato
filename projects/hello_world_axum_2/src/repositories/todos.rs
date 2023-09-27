@@ -3,13 +3,13 @@ use anyhow::Result;
 use crate::models::todos::*;
 
 pub trait ITodoRepository {
-    fn save(&self, todo: Todo) -> Result<Todo>;
-    fn find(&self, todo_id: TodoId) -> Todo;
+    fn save(&self, todo: &Todo) -> Result<Todo>;
+    fn find(&self, todo_id: TodoId) -> Option<Todo>;
     fn find_all(&self) -> Vec<Todo>;
     fn delete(&self, todo: Todo) -> Result<()>;
 }
 
-mod in_memory_todo_repository {
+pub mod in_memory_todo_repository {
     use std::{
         collections::HashMap,
         sync::{Arc, RwLock},
@@ -17,7 +17,7 @@ mod in_memory_todo_repository {
 
     use super::*;
 
-    struct InMemoryTodoRepository {
+    pub struct InMemoryTodoRepository {
         store: Arc<RwLock<HashMap<TodoId, Todo>>>,
     }
 
@@ -30,11 +30,11 @@ mod in_memory_todo_repository {
     }
 
     impl ITodoRepository for InMemoryTodoRepository {
-        fn save(&self, todo: Todo) -> Result<Todo> {
+        fn save(&self, todo: &Todo) -> Result<Todo> {
             todo!()
         }
 
-        fn find(&self, todo_id: TodoId) -> Todo {
+        fn find(&self, todo_id: TodoId) -> Option<Todo> {
             todo!()
         }
 
