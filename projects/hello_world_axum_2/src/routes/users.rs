@@ -18,7 +18,10 @@ pub async fn create(Json(payload): Json<CreateUser>) -> impl IntoResponse {
 mod tests {
     use super::*;
 
-    use crate::routes::{self, tests};
+    use crate::{
+        repositories::todos::in_memory_todo_repository::InMemoryTodoRepository,
+        routes::{self, tests},
+    };
 
     use anyhow::Result;
     use axum::http::method::Method;
@@ -26,9 +29,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_user() -> Result<()> {
+        let repository = InMemoryTodoRepository::new();
+
         let req_body = r#"{"user_name": "佐藤 太郎"}"#.to_string();
         let req = tests::build_req_with_json("/users", Method::POST, req_body)?;
-        let res = routes::create_app().oneshot(req).await?;
+        let res = routes::create_app(repository).oneshot(req).await?;
         let res_body: User = tests::res_to_struct(res).await?;
 
         let name_in_res = res_body.get_user_name();
