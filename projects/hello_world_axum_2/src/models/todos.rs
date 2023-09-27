@@ -17,6 +17,10 @@ impl Todo {
             completed: false,
         }
     }
+
+    pub fn get_id(&self) -> &TodoId {
+        &self.id
+    }
 }
 
 impl PartialEq for Todo {
