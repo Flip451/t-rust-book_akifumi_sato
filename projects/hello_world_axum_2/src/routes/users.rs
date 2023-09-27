@@ -1,22 +1,18 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct User {
-    id: i32,
-    username: String,
-}
+use crate::models::users::*;
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CreateUser {
-    username: String,
+    user_name: String,
 }
 
 pub async fn create(Json(payload): Json<CreateUser>) -> impl IntoResponse {
-    let user = User {
-        id: 1337,
-        username: payload.username,
-    };
+    let user_id: UserId = Uuid::new_v4();
+    let user_name = UserName::new(&payload.user_name);
+    let user = User::new(user_id, user_name);
     (StatusCode::CREATED, Json(user))
 }
 
@@ -32,16 +28,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_user() -> Result<()> {
-        let req_body = r#"{"username": "佐藤 太郎"}"#.to_string();
+        let req_body = r#"{"user_name": "佐藤 太郎"}"#.to_string();
         let req = tests::build_req_with_json("/users", Method::POST, req_body)?;
         let res = routes::create_app().oneshot(req).await?;
         let res_body: User = tests::res_to_struct(res).await?;
-        
-        let expected = User {
-            id: 1337,
-            username: "佐藤 太郎".to_string()
-        };
-        assert_eq!(expected, res_body);
+
+        let name_in_res = res_body.get_user_name();
+        let expected = "佐藤 太郎";
+        assert_eq!(expected, name_in_res);
         Ok(())
     }
 }
