@@ -1,21 +1,61 @@
 use anyhow::Result;
+use axum::async_trait;
 use thiserror::Error;
 
 use crate::models::todos::*;
 
-pub trait ITodoRepository: 'static {
-    fn save(&self, todo: &Todo);
-    fn find(&self, todo_id: &TodoId) -> Option<Todo>;
-    fn find_all(&self) -> Vec<Todo>;
-    fn delete(&self, todo: Todo) -> Result<()>;
+#[async_trait]
+pub trait ITodoRepository: Clone + Send + Sync + 'static {
+    async fn save(&self, todo: &Todo) -> Result<()>;
+    async fn find(&self, todo_id: &TodoId) -> Result<Todo>;
+    async fn find_all(&self) -> Result<Vec<Todo>>;
+    async fn delete(&self, todo: Todo) -> Result<()>;
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum TodoRepositoryError {
     #[error("NotFound, id is {0}")]
     NotFound(TodoId),
 }
 
+pub mod todo_repository_with_sqlx {
+    use axum::async_trait;
+    use sqlx::PgPool;
+
+    use super::*;
+
+    #[derive(Clone)]
+    pub struct TodoRepositoryWithSqlx {
+        pool: PgPool,
+    }
+
+    impl TodoRepositoryWithSqlx {
+        pub fn new(pool: PgPool) -> Self {
+            Self { pool }
+        }
+    }
+
+    #[async_trait]
+    impl ITodoRepository for TodoRepositoryWithSqlx {
+        async fn save(&self, todo: &Todo) -> Result<()> {
+            todo!()
+        }
+
+        async fn find(&self, todo_id: &TodoId) -> Result<Todo> {
+            todo!()
+        }
+
+        async fn find_all(&self) -> Result<Vec<Todo>> {
+            todo!()
+        }
+
+        async fn delete(&self, todo: Todo) -> Result<()> {
+            todo!()
+        }
+    }
+}
+
+#[cfg(test)]
 pub mod in_memory_todo_repository {
     use std::{
         collections::HashMap,
@@ -26,6 +66,7 @@ pub mod in_memory_todo_repository {
 
     type TodoStore = HashMap<TodoId, Todo>;
 
+    #[derive(Clone)]
     pub struct InMemoryTodoRepository {
         store: Arc<RwLock<TodoStore>>,
     }
@@ -46,26 +87,29 @@ pub mod in_memory_todo_repository {
         }
     }
 
+    #[async_trait]
     impl ITodoRepository for InMemoryTodoRepository {
-        fn save(&self, todo: &Todo) {
+        async fn save(&self, todo: &Todo) -> Result<()> {
             let mut store = self.write_store_ref();
             store.insert(todo.get_id().clone(), todo.clone());
+            Ok(())
         }
 
-        fn find(&self, todo_id: &TodoId) -> Option<Todo> {
+        async fn find(&self, todo_id: &TodoId) -> Result<Todo> {
             let store = self.read_store_ref();
             match store.get(todo_id) {
-                Some(todo) => Some(todo.clone()),
-                None => None,
+                Some(todo) => Ok(todo.clone()),
+                None => Err(TodoRepositoryError::NotFound(todo_id.clone()).into()),
             }
         }
 
-        fn find_all(&self) -> Vec<Todo> {
+        async fn find_all(&self) -> Result<Vec<Todo>> {
             let store = self.read_store_ref();
-            store.values().map(|todo| todo.clone()).collect()
+            let todos = store.values().map(|todo| todo.clone()).collect();
+            Ok(todos)
         }
 
-        fn delete(&self, todo: Todo) -> Result<()> {
+        async fn delete(&self, todo: Todo) -> Result<()> {
             let mut store = self.write_store_ref();
             let id = todo.get_id();
             match store.get(id) {
@@ -84,8 +128,8 @@ pub mod in_memory_todo_repository {
 
         use anyhow::Result;
 
-        #[test]
-        fn todo_crud_senario() -> Result<()> {
+        #[tokio::test]
+        async fn todo_crud_senario() -> Result<()> {
             let repository = InMemoryTodoRepository::new();
 
             let text = TodoText::new("todo text");
@@ -95,7 +139,7 @@ pub mod in_memory_todo_repository {
             // save
             {
                 let expected = new_todo.clone();
-                repository.save(&new_todo);
+                repository.save(&new_todo).await?;
                 let store = repository.read_store_ref();
                 let saved_todo = store.get(new_todo_id).expect("failed to save todo.");
                 assert_eq!(&expected, saved_todo);
@@ -106,7 +150,10 @@ pub mod in_memory_todo_repository {
             // find
             {
                 let expected = new_todo.clone();
-                let todo_found = repository.find(new_todo_id).expect("failed to find todo.");
+                let todo_found = repository
+                    .find(new_todo_id)
+                    .await
+                    .expect("failed to find todo.");
                 assert_eq!(expected, todo_found);
                 assert_eq!(expected.get_text(), todo_found.get_text());
                 assert_eq!(expected.get_completed(), todo_found.get_completed());
@@ -115,13 +162,16 @@ pub mod in_memory_todo_repository {
             // find_all
             {
                 let expected = vec![new_todo.clone()];
-                let todos_found = repository.find_all();
+                let todos_found = repository.find_all().await?;
                 assert_eq!(expected, todos_found);
             }
 
             // delete
             {
-                repository.delete(new_todo).expect("failed to delete todo.");
+                repository
+                    .delete(new_todo)
+                    .await
+                    .expect("failed to delete todo.");
                 let store = repository.read_store_ref();
                 assert!(store.is_empty());
             }
