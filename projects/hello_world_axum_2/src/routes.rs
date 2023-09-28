@@ -19,7 +19,13 @@ where
     Router::new()
         .route("/", get(root::index))
         .route("/users", post(users::create))
-        .route("/todos", post(todos::create::<T>))
+        .route("/todos", get(todos::all::<T>).post(todos::create::<T>))
+        .route(
+            "/todos/:id",
+            get(todos::find::<T>)
+                .patch(todos::update::<T>)
+                .delete(todos::delete::<T>),
+        )
         .with_state(Arc::new(repository))
 }
 
