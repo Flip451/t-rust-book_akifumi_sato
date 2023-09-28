@@ -457,6 +457,8 @@ cargo add dotenv
 
 - sqlx を用いてリポジトリの実体 `TodoRepositoryWithSqlx` を作成する
 
+- リポジトリの中核には、`PgPool` を用いる
+
 - **`src/repositories/todos.rs`**
 
   ```rust
@@ -504,3 +506,86 @@ cargo add dotenv
 
 ## main 関数で使用するリポジトリを sqlx を利用したものに変更する
 
+### db 接続用の関数の作成
+
+- **`src/pg_pool.rs`**
+
+  ```rust
+  use std::env;
+
+  use dotenv::dotenv;
+  use sqlx::PgPool;
+
+  pub async fn connect_to_pg_pool() -> PgPool {
+      dotenv().ok();
+      let database_url = &env::var("DATABASE_URL").expect("undefined [DATABASE_URL]");
+      tracing::debug!("start connect database...");
+      let pool = PgPool::connect(&database_url)
+          .await
+          .expect(&format!("fail connect database, url is [{}]", database_url));
+      pool
+  }
+  ```
+
+- **`src/lib.rs`**
+
+  ```diff
+  pub mod logs;
+  pub mod models;
+  + pub mod pg_pool;
+  pub mod repositories;
+  pub mod routes;
+  ```
+
+### main 関数内で db に接続して `PgPool` をリポジトリに渡す
+
+- **`src/main.rs`**
+
+  ```rust
+  use anyhow::Result;
+  use hello_world_axum_2::{
+      logs, pg_pool, repositories::todos::todo_repository_with_sqlx::TodoRepositoryWithSqlx,
+      routes::create_app,
+  };
+  use std::net::SocketAddr;
+
+  #[tokio::main]
+  async fn main() -> Result<()> {
+      // logging の初期化
+      logs::init_log();
+
+      // db への接続
+      let pool = pg_pool::connect_to_pg_pool().await;
+
+      // リポジトリの作成
+      let repository = TodoRepositoryWithSqlx::new(pool.clone());
+
+      // ルーティングの設定
+      let app = create_app(repository);
+
+      // アドレスを作成
+      let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+
+      // ログにアドレスを表示
+      tracing::debug!("listening on {}", addr);
+
+      axum::Server::bind(&addr)
+          .serve(app.into_make_service())
+          .await?;
+
+      Ok(())
+  }
+  ```
+
+## `in_memory_todo_repository` をテスト用のモジュールに設定する
+
+- **`src/repositories/todos.rs`**
+
+  ```diff
+  // --snip--
+
+  + #[cfg(test)]
+  pub mod in_memory_todo_repository {
+      // --snip--
+  }
+  ```

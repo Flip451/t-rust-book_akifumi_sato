@@ -55,6 +55,7 @@ pub mod todo_repository_with_sqlx {
     }
 }
 
+#[cfg(test)]
 pub mod in_memory_todo_repository {
     use std::{
         collections::HashMap,
