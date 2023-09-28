@@ -1,15 +1,26 @@
 mod root;
+mod todos;
 mod users;
+
+use std::sync::Arc;
 
 use axum::{
     routing::{get, post},
     Router,
 };
 
-pub fn create_app() -> Router {
+use crate::repositories::todos::ITodoRepository;
+
+pub fn create_app<T>(repository: T) -> Router
+where
+    T: Send + Sync + 'static,
+    T: ITodoRepository,
+{
     Router::new()
         .route("/", get(root::index))
         .route("/users", post(users::create))
+        .route("/todos", post(todos::create::<T>))
+        .with_state(Arc::new(repository))
 }
 
 #[cfg(test)]
