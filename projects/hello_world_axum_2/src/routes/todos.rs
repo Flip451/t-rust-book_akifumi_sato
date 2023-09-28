@@ -23,9 +23,7 @@ where
 {
     let text = TodoText::new(&payload.text);
     let todo = Todo::new(text);
-    let todo = repository
-        .save(&todo)
-        .or(Err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    repository.save(&todo);
 
     Ok((StatusCode::CREATED, Json(todo)))
 }

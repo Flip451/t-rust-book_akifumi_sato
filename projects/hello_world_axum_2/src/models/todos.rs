@@ -29,6 +29,8 @@ impl PartialEq for Todo {
     }
 }
 
+impl Eq for Todo {}
+
 pub type TodoId = Uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -40,6 +42,21 @@ impl TodoText {
     pub fn new(s: &str) -> Self {
         Self {
             value: s.to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    impl Todo {
+        pub fn get_text(&self) -> &str {
+            &self.text.value
+        }
+
+        pub fn get_completed(&self) -> bool {
+            self.completed
         }
     }
 }
