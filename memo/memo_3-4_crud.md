@@ -300,8 +300,8 @@
   use crate::models::todos::*;
 
   pub trait ITodoRepository {
-      fn save(&self, todo: &Todo) -> Result<Todo>;
-      fn find(&self, todo_id: TodoId) -> Option<Todo>;
+      fn save(&self, todo: &Todo);
+      fn find(&self, todo_id: &TodoId) -> Option<Todo>;
       fn find_all(&self) -> Vec<Todo>;
       fn delete(&self, todo: Todo) -> Result<()>;
   }
@@ -327,11 +327,11 @@
       }
 
       impl ITodoRepository for InMemoryTodoRepository {
-          fn save(&self, todo: &Todo) -> Result<Todo> {
+          fn save(&self, todo: &Todo) {
               todo!()
           }
 
-          fn find(&self, todo_id: TodoId) -> Option<Todo> {
+          fn find(&self, todo_id: &TodoId) -> Option<Todo> {
               todo!()
           }
 
@@ -380,9 +380,7 @@
   {
       let text = TodoText::new(&payload.text);
       let todo = Todo::new(text);
-      let todo = repository
-          .save(&todo)
-          .or(Err(StatusCode::INTERNAL_SERVER_ERROR))?;
+      repository.save(&todo);
 
       Ok((StatusCode::CREATED, Json(todo)))
   }
@@ -586,8 +584,8 @@
   use crate::models::todos::*;
 
   pub trait ITodoRepository: 'static {
-      fn save(&self, todo: &Todo) -> Result<Todo>;
-      fn find(&self, todo_id: TodoId) -> Option<Todo>;
+      fn save(&self, todo: &Todo);
+      fn find(&self, todo_id: &TodoId) -> Option<Todo>;
       fn find_all(&self) -> Vec<Todo>;
       fn delete(&self, todo: Todo) -> Result<()>;
   }
@@ -629,16 +627,14 @@
       }
 
       impl ITodoRepository for InMemoryTodoRepository {
-          fn save(&self, todo: &Todo) -> Result<Todo> {
+          fn save(&self, todo: &Todo) {
               let mut store = self.write_store_ref();
-              let todo = todo.clone();
               store.insert(todo.get_id().clone(), todo.clone());
-              Ok(todo)
           }
 
-          fn find(&self, todo_id: TodoId) -> Option<Todo> {
+          fn find(&self, todo_id: &TodoId) -> Option<Todo> {
               let store = self.read_store_ref();
-              match store.get(&todo_id) {
+              match store.get(todo_id) {
                   Some(todo) => Some(todo.clone()),
                   None => None,
               }
@@ -665,6 +661,7 @@
   ```
 
 - **`src/models/todos.rs`**
+
   ```diff
   use serde::{Deserialize, Serialize};
   use uuid::Uuid;
@@ -692,4 +689,98 @@
   }
 
   // --snip--
+  ```
+
+## Todo の CRUD に関するテストの追加
+
+- **`src/repositories/todos.rs`**
+
+  ```rust
+  {
+      // --snip--
+   
+      #[cfg(test)]
+      mod tests {
+          use super::*;
+
+          use anyhow::Result;
+
+          #[test]
+          fn todo_crud_senario() -> Result<()> {
+              let repository = InMemoryTodoRepository::new();
+
+              let text = TodoText::new("todo text");
+              let new_todo = Todo::new(text);
+              let new_todo_id = new_todo.get_id();
+
+              // save
+              {
+                  let expected = new_todo.clone();
+                  repository.save(&new_todo);
+                  let store = repository.read_store_ref();
+                  let saved_todo = store.get(new_todo_id).expect("failed to save todo.");
+                  assert_eq!(&expected, saved_todo);
+                  assert_eq!(expected.get_text(), saved_todo.get_text());
+                  assert_eq!(expected.get_completed(), saved_todo.get_completed());
+              }
+
+              // find
+              {
+                  let expected = new_todo.clone();
+                  let todo_found = repository.find(new_todo_id).expect("failed to find todo.");
+                  assert_eq!(expected, todo_found);
+                  assert_eq!(expected.get_text(), todo_found.get_text());
+                  assert_eq!(expected.get_completed(), todo_found.get_completed());
+              }
+
+              // find_all
+              {
+                  let expected = vec![new_todo.clone()];
+                  let todos_found = repository.find_all();
+                  assert_eq!(expected, todos_found);
+              }
+
+              // delete
+              {
+                  repository.delete(new_todo).expect("failed to delete todo.");
+                  let store = repository.read_store_ref();
+                  assert!(store.is_empty());
+              }
+
+              Ok(())
+          }
+      }
+  }
+  ```
+
+- **`src/models/todos.rs`**
+
+  ```diff
+  use serde::{Deserialize, Serialize};
+  use uuid::Uuid;
+
+  #[derive(Clone, Debug, Deserialize, Serialize)]
+  pub struct Todo {
+      id: TodoId,
+      text: TodoText,
+      completed: bool,
+  }
+
+  // --snip--
+
+  + #[cfg(test)]
+  + mod tests {
+  +     use super::*;
+  + 
+  +     impl Todo {
+  +         pub fn get_text(&self) -> &str {
+  +             &self.text.value
+  +         }
+  + 
+  +         pub fn get_completed(&self) -> bool {
+  +             self.completed
+  +         }
+  +     }
+  + }
+
   ```
