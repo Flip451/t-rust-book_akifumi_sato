@@ -1,3 +1,8 @@
+# HTTP リクエストを処理するハンドラーの作成
+
+## `src/routes/todo.rs` にハンドラーのひな型を作成
+
+```rust
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -73,3 +78,10 @@ pub async fn delete<T>(
 ) -> impl IntoResponse {
     todo!()
 }
+```
+
+## Router に設定を追加
+
+## テストの追加
+
+## 処理の記述
