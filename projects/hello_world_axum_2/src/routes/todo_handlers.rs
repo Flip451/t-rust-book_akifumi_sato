@@ -12,7 +12,7 @@ use validator::Validate;
 
 use crate::{
     models::todos::{Todo, TodoId, TodoText},
-    repositories::todos::ITodoRepository,
+    repositories::todos::{ITodoRepository, TodoRepositoryError},
 };
 
 use super::validator::ValidatedJson;
@@ -33,15 +33,15 @@ pub struct UpdateTodo {
 pub async fn create<T>(
     State(repository): State<Arc<T>>,
     ValidatedJson(payload): ValidatedJson<CreateTodo>,
-) -> impl IntoResponse
+) -> Result<impl IntoResponse, StatusCode>
 where
     T: ITodoRepository,
 {
     let text = payload.text;
     let todo = Todo::new(text);
-    repository.save(&todo);
+    repository.save(&todo).await.or(Err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    (StatusCode::CREATED, Json(todo))
+    Ok((StatusCode::CREATED, Json(todo)))
 }
 
 pub async fn find<T>(
@@ -51,18 +51,21 @@ pub async fn find<T>(
 where
     T: ITodoRepository,
 {
-    match repository.find(&id) {
-        Some(todo) => Ok((StatusCode::OK, Json(todo))),
-        None => Err(StatusCode::NOT_FOUND),
+    match repository.find(&id).await {
+        Ok(todo) => Ok((StatusCode::OK, Json(todo))),
+        Err(_) => Err(StatusCode::NOT_FOUND),
     }
 }
 
-pub async fn all<T>(State(repository): State<Arc<T>>) -> impl IntoResponse
+pub async fn all<T>(State(repository): State<Arc<T>>) -> Result<impl IntoResponse, StatusCode>
 where
     T: ITodoRepository,
 {
-    let todos = repository.find_all();
-    (StatusCode::OK, Json(todos))
+    let todos = repository
+        .find_all()
+        .await
+        .or(Err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    Ok((StatusCode::OK, Json(todos)))
 }
 
 pub async fn update<T>(
@@ -73,7 +76,7 @@ pub async fn update<T>(
 where
     T: ITodoRepository,
 {
-    let mut todo = repository.find(&id).ok_or(StatusCode::NOT_FOUND)?;
+    let mut todo = repository.find(&id).await.or(Err(StatusCode::NOT_FOUND))?;
     let UpdateTodo {
         text: new_text,
         completed: new_completed,
@@ -84,26 +87,30 @@ where
     if let Some(new_completed) = new_completed {
         todo.set_completed(new_completed);
     }
-    repository.save(&todo);
+    repository
+        .save(&todo)
+        .await
+        .or(Err(StatusCode::INTERNAL_SERVER_ERROR))?;
     Ok((StatusCode::OK, Json(todo)))
 }
 
-pub async fn delete<T>(
-    State(repository): State<Arc<T>>,
-    Path(id): Path<TodoId>,
-) -> impl IntoResponse
+pub async fn delete<T>(State(repository): State<Arc<T>>, Path(id): Path<TodoId>) -> StatusCode
 where
     T: ITodoRepository,
 {
-    match repository.find(&id) {
-        Some(todo) => {
-            if let Ok(_) = repository.delete(todo) {
+    match repository.find(&id).await {
+        Ok(todo) => {
+            if let Ok(_) = repository.delete(todo).await {
                 StatusCode::NO_CONTENT
             } else {
-                StatusCode::NOT_FOUND
+                StatusCode::INTERNAL_SERVER_ERROR
             }
         }
-        None => StatusCode::NOT_FOUND,
+        // <https://users.rust-lang.org/t/kind-method-not-found-when-using-anyhow-and-thiserror/81560> を参考に実装
+        Err(error) if error.downcast_ref() == Some(&TodoRepositoryError::NotFound(id)) => {
+            StatusCode::NOT_FOUND
+        }
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
 
@@ -144,7 +151,7 @@ mod tests {
 
         // リポジトリに直接 Todo を作成
         let todo_saved_to_repository = Todo::new(TodoText::new("should find todo"));
-        repository.save(&todo_saved_to_repository);
+        repository.save(&todo_saved_to_repository).await?;
         let todo_id_in_repository = todo_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
@@ -175,21 +182,21 @@ mod tests {
         let mut todos_in_repository = HashMap::new();
 
         let todo_saved_to_repository = Todo::new(TodoText::new("should get todo-1"));
-        repository.save(&todo_saved_to_repository);
+        repository.save(&todo_saved_to_repository).await?;
         todos_in_repository.insert(
             todo_saved_to_repository.get_id().clone(),
             todo_saved_to_repository,
         );
 
         let todo_saved_to_repository = Todo::new(TodoText::new("should get todo-2"));
-        repository.save(&todo_saved_to_repository);
+        repository.save(&todo_saved_to_repository).await?;
         todos_in_repository.insert(
             todo_saved_to_repository.get_id().clone(),
             todo_saved_to_repository,
         );
 
         let todo_saved_to_repository = Todo::new(TodoText::new("should get todo-3"));
-        repository.save(&todo_saved_to_repository);
+        repository.save(&todo_saved_to_repository).await?;
         todos_in_repository.insert(
             todo_saved_to_repository.get_id().clone(),
             todo_saved_to_repository,
@@ -232,7 +239,7 @@ mod tests {
 
         // リポジトリに直接 Todo を作成
         let todo_saved_to_repository = Todo::new(TodoText::new("should create todo"));
-        repository.save(&todo_saved_to_repository);
+        repository.save(&todo_saved_to_repository).await?;
         let todo_id_in_repository = todo_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
@@ -265,7 +272,7 @@ mod tests {
 
         // リポジトリに直接 Todo を作成
         let todo_saved_to_repository = Todo::new(TodoText::new("should create todo"));
-        repository.save(&todo_saved_to_repository);
+        repository.save(&todo_saved_to_repository).await?;
         let todo_id_in_repository = todo_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
