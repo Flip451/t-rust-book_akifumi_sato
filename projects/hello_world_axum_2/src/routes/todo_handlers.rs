@@ -8,31 +8,36 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 use crate::{
     models::todos::{Todo, TodoId, TodoText},
     repositories::todos::ITodoRepository,
 };
 
-#[derive(Serialize, Clone, Debug, Deserialize)]
+use super::validator::ValidatedJson;
+
+#[derive(Serialize, Clone, Debug, Deserialize, Validate)]
 pub struct CreateTodo {
-    pub text: String,
+    #[validate]
+    pub text: TodoText,
 }
 
-#[derive(Serialize, Clone, Debug, Deserialize)]
+#[derive(Serialize, Clone, Debug, Deserialize, Validate)]
 pub struct UpdateTodo {
-    text: Option<String>,
+    #[validate]
+    text: Option<TodoText>,
     completed: Option<bool>,
 }
 
 pub async fn create<T>(
     State(repository): State<Arc<T>>,
-    Json(payload): Json<CreateTodo>,
+    ValidatedJson(payload): ValidatedJson<CreateTodo>,
 ) -> impl IntoResponse
 where
     T: ITodoRepository,
 {
-    let text = TodoText::new(&payload.text);
+    let text = payload.text;
     let todo = Todo::new(text);
     repository.save(&todo);
 
@@ -63,7 +68,7 @@ where
 pub async fn update<T>(
     State(repository): State<Arc<T>>,
     Path(id): Path<TodoId>,
-    Json(payload): Json<UpdateTodo>,
+    ValidatedJson(payload): ValidatedJson<UpdateTodo>,
 ) -> Result<impl IntoResponse, StatusCode>
 where
     T: ITodoRepository,
@@ -74,7 +79,7 @@ where
         completed: new_completed,
     } = payload;
     if let Some(new_text) = new_text {
-        todo.set_text(&new_text);
+        todo.set_text(new_text);
     }
     if let Some(new_completed) = new_completed {
         todo.set_completed(new_completed);
@@ -89,7 +94,7 @@ pub async fn delete<T>(
 ) -> impl IntoResponse
 where
     T: ITodoRepository,
-{;
+{
     match repository.find(&id) {
         Some(todo) => {
             if let Ok(_) = repository.delete(todo) {
@@ -97,17 +102,14 @@ where
             } else {
                 StatusCode::NOT_FOUND
             }
-        },
+        }
         None => StatusCode::NOT_FOUND,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        collections::{HashMap, HashSet},
-        iter::zip,
-    };
+    use std::collections::HashMap;
 
     use super::*;
     use crate::{
@@ -121,7 +123,7 @@ mod tests {
     #[tokio::test]
     async fn should_create_todo() -> Result<()> {
         let repository = InMemoryTodoRepository::new();
-        let req_body = r#"{"text": "should create todo"}"#.to_string();
+        let req_body = r#"{"text": {"value": "should create todo"}}"#.to_string();
 
         let req = tests::build_req_with_json("/todos", Method::POST, req_body)?;
         let res = routes::create_app(repository).oneshot(req).await?;
@@ -234,7 +236,8 @@ mod tests {
         let todo_id_in_repository = todo_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
-        let req_json_string = r#"{"text": "should update todo", "completed": true}"#.to_string();
+        let req_json_string =
+            r#"{"text": {"value": "should update todo"}, "completed": true}"#.to_string();
         let req = tests::build_req_with_json(
             &format!("/todos/{}", todo_id_in_repository),
             Method::PATCH,

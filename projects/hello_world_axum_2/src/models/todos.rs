@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use validator::Validate;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Todo {
@@ -22,8 +23,8 @@ impl Todo {
         &self.id
     }
 
-    pub fn set_text(&mut self, new_text: &str) {
-        self.text = TodoText::new(new_text);
+    pub fn set_text(&mut self, new_text: TodoText) {
+        self.text = new_text;
     }
 
     pub fn set_completed(&mut self, new_completed: bool) {
@@ -41,8 +42,10 @@ impl Eq for Todo {}
 
 pub type TodoId = Uuid;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Validate)]
 pub struct TodoText {
+    #[validate(length(min = 1, message = "Can not be empty"))]
+    #[validate(length(max = 100, message = "Over text length"))]
     value: String,
 }
 

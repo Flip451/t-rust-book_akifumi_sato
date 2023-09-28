@@ -1,6 +1,7 @@
-mod root;
-mod todos;
-mod users;
+mod root_handlers;
+mod todo_handlers;
+mod user_handlers;
+mod validator;
 
 use std::sync::Arc;
 
@@ -17,14 +18,14 @@ where
     T: ITodoRepository,
 {
     Router::new()
-        .route("/", get(root::index))
-        .route("/users", post(users::create))
-        .route("/todos", get(todos::all::<T>).post(todos::create::<T>))
+        .route("/", get(root_handlers::index))
+        .route("/users", post(user_handlers::create))
+        .route("/todos", get(todo_handlers::all::<T>).post(todo_handlers::create::<T>))
         .route(
             "/todos/:id",
-            get(todos::find::<T>)
-                .patch(todos::update::<T>)
-                .delete(todos::delete::<T>),
+            get(todo_handlers::find::<T>)
+                .patch(todo_handlers::update::<T>)
+                .delete(todo_handlers::delete::<T>),
         )
         .with_state(Arc::new(repository))
 }
