@@ -452,3 +452,55 @@ cargo add dotenv
       }
   }
   ```
+
+## sqlx を用いたリポジトリの実体の作成
+
+- sqlx を用いてリポジトリの実体 `TodoRepositoryWithSqlx` を作成する
+
+- **`src/repositories/todos.rs`**
+
+  ```rust
+  // --snip--
+
+  pub mod todo_repository_with_sqlx {
+      use axum::async_trait;
+      use sqlx::PgPool;
+
+      use super::*;
+
+      #[derive(Clone)]
+      pub struct TodoRepositoryWithSqlx {
+          pool: PgPool,
+      }
+
+      impl TodoRepositoryWithSqlx {
+          pub fn new(pool: PgPool) -> Self {
+              Self { pool }
+          }
+      }
+
+      #[async_trait]
+      impl ITodoRepository for TodoRepositoryWithSqlx {
+          async fn save(&self, todo: &Todo) -> Result<()> {
+              todo!()
+          }
+
+          async fn find(&self, todo_id: &TodoId) -> Result<Todo> {
+              todo!()
+          }
+
+          async fn find_all(&self) -> Result<Vec<Todo>> {
+              todo!()
+          }
+
+          async fn delete(&self, todo: Todo) -> Result<()> {
+              todo!()
+          }
+      }
+  }
+
+  // --snip--
+  ```
+
+## main 関数で使用するリポジトリを sqlx を利用したものに変更する
+

@@ -18,6 +18,43 @@ pub enum TodoRepositoryError {
     NotFound(TodoId),
 }
 
+pub mod todo_repository_with_sqlx {
+    use axum::async_trait;
+    use sqlx::PgPool;
+
+    use super::*;
+
+    #[derive(Clone)]
+    pub struct TodoRepositoryWithSqlx {
+        pool: PgPool,
+    }
+
+    impl TodoRepositoryWithSqlx {
+        pub fn new(pool: PgPool) -> Self {
+            Self { pool }
+        }
+    }
+
+    #[async_trait]
+    impl ITodoRepository for TodoRepositoryWithSqlx {
+        async fn save(&self, todo: &Todo) -> Result<()> {
+            todo!()
+        }
+
+        async fn find(&self, todo_id: &TodoId) -> Result<Todo> {
+            todo!()
+        }
+
+        async fn find_all(&self) -> Result<Vec<Todo>> {
+            todo!()
+        }
+
+        async fn delete(&self, todo: Todo) -> Result<()> {
+            todo!()
+        }
+    }
+}
+
 pub mod in_memory_todo_repository {
     use std::{
         collections::HashMap,
@@ -51,7 +88,7 @@ pub mod in_memory_todo_repository {
 
     #[async_trait]
     impl ITodoRepository for InMemoryTodoRepository {
-        async fn save(&self, todo: &Todo) -> Result<()>{
+        async fn save(&self, todo: &Todo) -> Result<()> {
             let mut store = self.write_store_ref();
             store.insert(todo.get_id().clone(), todo.clone());
             Ok(())
@@ -112,7 +149,10 @@ pub mod in_memory_todo_repository {
             // find
             {
                 let expected = new_todo.clone();
-                let todo_found = repository.find(new_todo_id).await.expect("failed to find todo.");
+                let todo_found = repository
+                    .find(new_todo_id)
+                    .await
+                    .expect("failed to find todo.");
                 assert_eq!(expected, todo_found);
                 assert_eq!(expected.get_text(), todo_found.get_text());
                 assert_eq!(expected.get_completed(), todo_found.get_completed());
@@ -127,7 +167,10 @@ pub mod in_memory_todo_repository {
 
             // delete
             {
-                repository.delete(new_todo).await.expect("failed to delete todo.");
+                repository
+                    .delete(new_todo)
+                    .await
+                    .expect("failed to delete todo.");
                 let store = repository.read_store_ref();
                 assert!(store.is_empty());
             }
