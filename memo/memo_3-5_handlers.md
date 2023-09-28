@@ -82,6 +82,29 @@ pub async fn delete<T>(
 
 ## Router に設定を追加
 
+```rust
+// --snip--
+pub fn create_app<T>(repository: T) -> Router
+where
+    T: Send + Sync + 'static,
+    T: ITodoRepository,
+{
+    Router::new()
+        .route("/", get(root::index))
+        .route(s"/users", post(users::create))
+        .route("/todos", get(todos::all::<T>).post(todos::create::<T>))
+        .route(
+            "/todos/:id",
+            get(todos::find::<T>)
+                .patch(todos::update::<T>)
+                .delete(todos::delete::<T>),
+        )
+        .with_state(Arc::new(repository))
+}
+
+// --snip--
+```
+
 ## テストの追加
 
 ## 処理の記述
