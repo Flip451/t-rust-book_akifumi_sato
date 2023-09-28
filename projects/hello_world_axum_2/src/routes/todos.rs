@@ -46,14 +46,18 @@ pub async fn find<T>(
 where
     T: ITodoRepository,
 {
-    Ok(todo!())
+    match repository.find(&id) {
+        Some(todo) => Ok((StatusCode::OK, Json(todo))),
+        None => Err(StatusCode::NOT_FOUND),
+    }
 }
 
 pub async fn all<T>(State(repository): State<Arc<T>>) -> impl IntoResponse
 where
     T: ITodoRepository,
 {
-    todo!()
+    let todos = repository.find_all();
+    (StatusCode::OK, Json(todos))
 }
 
 pub async fn update<T>(
@@ -64,14 +68,38 @@ pub async fn update<T>(
 where
     T: ITodoRepository,
 {
-    Ok(todo!())
+    let mut todo = repository.find(&id).ok_or(StatusCode::NOT_FOUND)?;
+    let UpdateTodo {
+        text: new_text,
+        completed: new_completed,
+    } = payload;
+    if let Some(new_text) = new_text {
+        todo.set_text(&new_text);
+    }
+    if let Some(new_completed) = new_completed {
+        todo.set_completed(new_completed);
+    }
+    repository.save(&todo);
+    Ok((StatusCode::OK, Json(todo)))
 }
 
 pub async fn delete<T>(
     State(repository): State<Arc<T>>,
     Path(id): Path<TodoId>,
-) -> impl IntoResponse {
-    todo!()
+) -> impl IntoResponse
+where
+    T: ITodoRepository,
+{;
+    match repository.find(&id) {
+        Some(todo) => {
+            if let Ok(_) = repository.delete(todo) {
+                StatusCode::NO_CONTENT
+            } else {
+                StatusCode::NOT_FOUND
+            }
+        },
+        None => StatusCode::NOT_FOUND,
+    }
 }
 
 #[cfg(test)]
@@ -207,8 +235,11 @@ mod tests {
 
         // リクエストの作成とレスポンスの受信
         let req_json_string = r#"{"text": "should update todo", "completed": true}"#.to_string();
-        let req =
-            tests::build_req_with_json(&format!("/todos/{}", todo_id_in_repository), Method::PATCH, req_json_string)?;
+        let req = tests::build_req_with_json(
+            &format!("/todos/{}", todo_id_in_repository),
+            Method::PATCH,
+            req_json_string,
+        )?;
         let res = routes::create_app(repository).oneshot(req).await?;
 
         // レスポンスボディを読み込んで Todo としてパース
@@ -235,8 +266,10 @@ mod tests {
         let todo_id_in_repository = todo_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
-        let req =
-            tests::build_req_with_empty(&format!("/todos/{}", todo_id_in_repository), Method::DELETE)?;
+        let req = tests::build_req_with_empty(
+            &format!("/todos/{}", todo_id_in_repository),
+            Method::DELETE,
+        )?;
         let res = routes::create_app(repository).oneshot(req).await?;
 
         // 期待通りの結果を確認

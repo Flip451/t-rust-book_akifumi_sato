@@ -289,4 +289,113 @@
   }
   ```
 
-## 処理の記述
+## ハンドラ―内の処理の記述
+
+- **`src/routes/todos.rs`**
+
+  ```rust
+  pub async fn create<T>(
+      State(repository): State<Arc<T>>,
+      Json(payload): Json<CreateTodo>,
+  ) -> impl IntoResponse
+  where
+      T: ITodoRepository,
+  {
+      let text = TodoText::new(&payload.text);
+      let todo = Todo::new(text);
+      repository.save(&todo);
+
+      (StatusCode::CREATED, Json(todo))
+  }
+
+  pub async fn find<T>(
+      State(repository): State<Arc<T>>,
+      Path(id): Path<TodoId>,
+  ) -> Result<impl IntoResponse, StatusCode>
+  where
+      T: ITodoRepository,
+  {
+      match repository.find(&id) {
+          Some(todo) => Ok((StatusCode::OK, Json(todo))),
+          None => Err(StatusCode::NOT_FOUND),
+      }
+  }
+
+  pub async fn all<T>(State(repository): State<Arc<T>>) -> impl IntoResponse
+  where
+      T: ITodoRepository,
+  {
+      let todos = repository.find_all();
+      (StatusCode::OK, Json(todos))
+  }
+
+  pub async fn update<T>(
+      State(repository): State<Arc<T>>,
+      Path(id): Path<TodoId>,
+      Json(payload): Json<UpdateTodo>,
+  ) -> Result<impl IntoResponse, StatusCode>
+  where
+      T: ITodoRepository,
+  {
+      let mut todo = repository.find(&id).ok_or(StatusCode::NOT_FOUND)?;
+      let UpdateTodo {
+          text: new_text,
+          completed: new_completed,
+      } = payload;
+      if let Some(new_text) = new_text {
+          todo.set_text(&new_text);
+      }
+      if let Some(new_completed) = new_completed {
+          todo.set_completed(new_completed);
+      }
+      repository.save(&todo);
+      Ok((StatusCode::OK, Json(todo)))
+  }
+
+  pub async fn delete<T>(
+      State(repository): State<Arc<T>>,
+      Path(id): Path<TodoId>,
+  ) -> impl IntoResponse
+  where
+      T: ITodoRepository,
+  {;
+      match repository.find(&id) {
+          Some(todo) => {
+              if let Ok(_) = repository.delete(todo) {
+                  StatusCode::NO_CONTENT
+              } else {
+                  StatusCode::NOT_FOUND
+              }
+          },
+          None => StatusCode::NOT_FOUND,
+      }
+  }
+  ```
+
+- **`src/models/todos.rs`**
+
+  ```diff
+
+  impl Todo {
+      pub fn new(text: TodoText) -> Self {
+          let id: TodoId = Uuid::new_v4();
+          Self {
+              id,
+              text,
+              completed: false,
+          }
+      }
+
+      pub fn get_id(&self) -> &TodoId {
+          &self.id
+      }
+
+  +    pub fn set_text(&mut self, new_text: &str) {
+  +        self.text = TodoText::new(new_text);
+  +    }
+  +
+  +    pub fn set_completed(&mut self, new_completed: bool) {
+  +        self.completed = new_completed;
+  +    }
+  }
+  ```

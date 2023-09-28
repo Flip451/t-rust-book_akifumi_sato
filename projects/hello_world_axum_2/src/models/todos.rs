@@ -21,6 +21,14 @@ impl Todo {
     pub fn get_id(&self) -> &TodoId {
         &self.id
     }
+
+    pub fn set_text(&mut self, new_text: &str) {
+        self.text = TodoText::new(new_text);
+    }
+
+    pub fn set_completed(&mut self, new_completed: bool) {
+        self.completed = new_completed;
+    }
 }
 
 impl PartialEq for Todo {
