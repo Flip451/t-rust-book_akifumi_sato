@@ -19,3 +19,7 @@ dev:
 # テスト
 test:
 	cargo test
+
+# スタンドアローンテスト
+test-s:
+	cargo test --no-default-features

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgRow, FromRow, Row, Type};
+use sqlx::{postgres::PgRow, FromRow, Row};
 use uuid::Uuid;
 use validator::Validate;
 
