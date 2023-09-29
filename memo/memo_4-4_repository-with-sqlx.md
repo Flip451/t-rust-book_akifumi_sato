@@ -124,6 +124,7 @@ while let Some(row) = rows.try_next().await? {
 ### `save` メソッド
 
 - 実行する sql 文
+  - <https://resanaplaza.com/2023/01/29/%E3%80%90%E5%AE%9F%E7%94%A8%E3%80%91postgresql%E3%81%A7%E4%BD%BF%E3%81%86upsert%E3%81%AE%E6%9B%B8%E3%81%8D%E6%96%B9%E3%81%A8%E6%B3%A8%E6%84%8F%E7%82%B9/> を参考に実装
 
   ```sql
   insert into todos (id, text, completed)
