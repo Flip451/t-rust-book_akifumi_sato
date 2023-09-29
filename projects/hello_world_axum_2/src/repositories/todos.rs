@@ -16,9 +16,12 @@ pub trait ITodoRepository: Clone + Send + Sync + 'static {
 pub enum TodoRepositoryError {
     #[error("NotFound, id is {0}")]
     NotFound(TodoId),
+    #[error("Unexpected Error: [{0}]")]
+    Unexpected(String),
 }
 
 pub mod todo_repository_with_sqlx {
+    use anyhow::Error;
     use axum::async_trait;
     use sqlx::PgPool;
 
@@ -38,19 +41,58 @@ pub mod todo_repository_with_sqlx {
     #[async_trait]
     impl ITodoRepository for TodoRepositoryWithSqlx {
         async fn save(&self, todo: &Todo) -> Result<()> {
-            todo!()
+            let sql = r#"
+insert into todos (id, text, completed)
+values ($1, $2, $3)
+on conflict (id)
+do update set text=$2, completed=$3
+"#;
+            sqlx::query(sql)
+                .bind(todo.get_id())
+                .bind(todo.get_text())
+                .bind(todo.get_completed())
+                .execute(&self.pool)
+                .await
+                .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+            Ok(())
         }
 
         async fn find(&self, todo_id: &TodoId) -> Result<Todo> {
-            todo!()
+            let sql = r#"select * from todos where id=$1"#;
+            let todo = sqlx::query_as::<_, Todo>(sql)
+                .bind(todo_id)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| match e {
+                    sqlx::Error::RowNotFound => TodoRepositoryError::NotFound(todo_id.clone()),
+                    _ => TodoRepositoryError::Unexpected(e.to_string()),
+                })?;
+            Ok(todo)
         }
 
         async fn find_all(&self) -> Result<Vec<Todo>> {
-            todo!()
+            let sql = r#"select * from todos order by id desc"#;
+            let todo = sqlx::query_as::<_, Todo>(sql)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+            Ok(todo)
         }
 
         async fn delete(&self, todo: Todo) -> Result<()> {
-            todo!()
+            let id = todo.get_id();
+            let sql = r#"delete from todos where id=$1"#;
+            sqlx::query(sql)
+                .bind(id)
+                .execute(&self.pool)
+                .await
+                .map_err(|e| match e {
+                    sqlx::Error::RowNotFound => {
+                        TodoRepositoryError::NotFound(id.clone())
+                    }
+                    _ => TodoRepositoryError::Unexpected(e.to_string()),
+                })?;
+            Ok(())
         }
     }
 }

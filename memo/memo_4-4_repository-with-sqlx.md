@@ -63,3 +63,166 @@ while let Some(row) = rows.try_next().await? {
 
 ## リポジトリの各メソッドの実装
 
+### Todo 構造体を `query_as` で利用できるように注釈を加える
+
+- **`src/models/todos.rs`**
+
+  ```rust
+  #[derive(Clone, Debug, Deserialize, Serialize)]
+  pub struct Todo {
+      id: TodoId,
+      text: TodoText,
+      completed: bool,
+  }
+
+  impl<'r> FromRow<'r, PgRow> for Todo {
+      fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
+          let id = row.try_get("id")?;
+          let text = TodoText::from_row(row)?;
+          let completed = row.try_get("completed")?;
+          Ok(Self {
+              id,
+              text,
+              completed,
+          })
+      }
+  }
+
+  // --snip--
+
+  #[derive(Clone, Debug, Deserialize, Serialize, Validate)]
+  pub struct TodoText {
+      #[validate(length(min = 1, message = "Can not be empty"))]
+      #[validate(length(max = 100, message = "Over text length"))]
+      value: String,
+  }
+
+  impl<'r> FromRow<'r, PgRow> for TodoText {
+      fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
+          let text = row.try_get("text")?;
+          Ok(TodoText { value: text })
+      }
+  }
+  ```
+
+### `RepositoryError` の修正
+
+- `TodoRepositoryError` に、sqlx の実行時エラーを表す要素を追加する
+
+  **`src/repositories/todos.rs`**
+
+  ```rust
+  #[derive(Error, Debug, PartialEq)]
+  pub enum TodoRepositoryError {
+      #[error("NotFound, id is {0}")]
+      NotFound(TodoId),
+      #[error("Unexpected Error: [{0}]")]
+      Unexpected(String),
+  }
+  ```
+
+### `save` メソッド
+
+- 実行する sql 文
+
+  ```sql
+  insert into todos (id, text, completed)
+  values ($1, $2, $3)
+  on conflict (id)
+  do update set text=$2, completed=$3;
+  ```
+
+- **`src/repositories/todos.rs`**
+
+  ```rust
+  async fn save(&self, todo: &Todo) -> Result<()> {
+      let sql = r#"
+  insert into todos (id, text, completed)
+  values ($1, $2, $3)
+  on conflict (id)
+  do update set text=$2, completed=$3
+  "#;
+      sqlx::query(sql)
+          .bind(todo.get_id())
+          .bind(todo.get_text())
+          .bind(todo.get_completed())
+          .execute(&self.pool)
+          .await
+          .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+      Ok(())
+  }
+  ```
+
+### `find` メソッド
+
+- 実行する sql 文
+
+  ```sql
+  select * from todos wehre id=$1;
+  ```
+
+- **`src/repositories/todos.rs`**
+
+  ```rust
+  async fn find(&self, todo_id: &TodoId) -> Result<Todo> {
+      let sql = r#"select * from todos where id=$1"#;
+      let todo = sqlx::query_as::<_, Todo>(sql)
+          .bind(todo_id)
+          .fetch_one(&self.pool)
+          .await
+          .map_err(|e| match e {
+              sqlx::Error::RowNotFound => TodoRepositoryError::NotFound(todo_id.clone()),
+              _ => TodoRepositoryError::Unexpected(e.to_string()),
+          })?;
+      Ok(todo)
+  }
+  ```
+
+### `find_all` メソッド
+
+- 実行する sql 文
+
+  ```sql
+  select * from todos order by id desc;
+  ```
+
+- **`src/repositories/todos.rs`**
+
+  ```rust
+  async fn find_all(&self) -> Result<Vec<Todo>> {
+      let sql = r#"select * from todos order by id desc"#;
+      let todo = sqlx::query_as::<_, Todo>(sql)
+          .fetch_all(&self.pool)
+          .await
+          .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+      Ok(todo)
+  }
+  ```
+
+### `delete` メソッド
+
+- 実行する sql 文
+
+  ```sql
+  delete from todos where id=$1;
+  ```
+
+- **`src/repositories/todos.rs`**
+
+  ```rust
+  async fn delete(&self, todo: Todo) -> Result<()> {
+      let id = todo.get_id();
+      let sql = r#"delete from todos where id=$1"#;
+      sqlx::query(sql)
+          .bind(id)
+          .execute(&self.pool)
+          .await
+          .map_err(|e| match e {
+              sqlx::Error::RowNotFound => {
+                  TodoRepositoryError::NotFound(id.clone())
+              }
+              _ => TodoRepositoryError::Unexpected(e.to_string()),
+          })?;
+      Ok(())
+  }
+  ```
