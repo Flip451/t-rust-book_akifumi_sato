@@ -3,7 +3,7 @@
 ## パッケージ内で sqlx を利用できるようにする
 
 ```sh
-cargo add sqlx --features "runtime-tokio-rustls","any","postgres"
+cargo add sqlx --features "runtime-tokio-rustls","any","postgres","uuid"
 cargo add dotenv
 ```
 
