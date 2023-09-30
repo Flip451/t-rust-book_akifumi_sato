@@ -114,7 +114,22 @@ do update set name=$2
             assert_eq!(expected, label_found);
             assert_eq!("label name", label_found.get_name().to_string());
 
-            // TODO: find_by_name の Some(_) の場合と None の場合のテスト
+            // TODO: DB にデータが入っているとテストが失敗する問題を修正
+            // find_by_name
+            let expected = Some(new_label.clone());
+            let label_found = repository
+                .find_by_name(&LabelName::new("label name"))
+                .await
+                .expect("failed to find label by name.");
+            assert_eq!(label_found, expected);
+
+            // find_by_name
+            let expected = None::<Label>;
+            let label_found = repository
+                .find_by_name(&LabelName::new("New label name"))
+                .await
+                .expect("failed to find label by name.");
+            assert_eq!(label_found, expected);
 
             // find_all
             let expected = new_label.clone();

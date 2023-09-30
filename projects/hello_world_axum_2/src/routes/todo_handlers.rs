@@ -160,7 +160,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_find_todo() -> Result<()> {
-        // リポジトリの作成name
+        // リポジトリの作成
         let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Todo を作成
@@ -188,7 +188,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_get_all_todo() -> Result<()> {
-        // リポジトリの作成name
+        // リポジトリの作成
         let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Todo を作成しつつ
@@ -248,7 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_update_todo() -> Result<()> {
-        // リポジトリの作成name
+        // リポジトリの作成
         let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Todo を作成
@@ -281,7 +281,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_delete_todo() -> Result<()> {
-        // リポジトリの作成name
+        // リポジトリの作成
         let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Todo を作成

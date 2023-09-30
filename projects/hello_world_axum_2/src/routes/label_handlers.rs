@@ -170,7 +170,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_find_label() -> Result<()> {
-        // リポジトリの作成name
+        // リポジトリの作成
         let label_repository = InMemoryLabelRepository::new();
 
         // リポジトリに直接 Label を作成
@@ -198,7 +198,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_get_all_label() -> Result<()> {
-        // リポジトリの作成name
+        // リポジトリの作成
         let label_repository = InMemoryLabelRepository::new();
 
         // リポジトリに直接 Label を作成しつつ
@@ -260,7 +260,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_update_label() -> Result<()> {
-        // リポジトリの作成name
+        // リポジトリの作成
         let label_repository = InMemoryLabelRepository::new();
 
         // リポジトリに直接 Label を作成
@@ -290,7 +290,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_delete_label() -> Result<()> {
-        // リポジトリの作成name
+        // リポジトリの作成
         let label_repository = InMemoryLabelRepository::new();
 
         // リポジトリに直接 Label を作成
@@ -309,15 +309,5 @@ mod tests {
         assert_eq!(StatusCode::NO_CONTENT, res.status());
 
         Ok(())
-    }
-
-    #[tokio::test]
-    async fn should_find_label_by_name() -> Result<()> {
-        todo!()
-    }
-
-    #[tokio::test]
-    async fn should_find_none() -> Result<()> {
-        todo!()
     }
 }
