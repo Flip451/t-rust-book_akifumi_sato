@@ -1,26 +1,19 @@
 import { useState, FC } from 'react'
 import 'modern-css-reset'
-import { v4 as uuidv4 } from 'uuid'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { CreateTodoPayload, Todo, TodoText } from './types/todo'
+import { CreateTodoPayload, Todo } from './types/todo'
 import { Box, Stack, Typography } from '@mui/material'
 import TodoForm from './components/TodoForm'
 import TodoList from './components/TodoList'
+import { createTodo } from './lib/api/todo'
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([])
-  const createId = () => uuidv4()
 
   const onSubmit = async (payload: CreateTodoPayload) => {
     if (!payload.text.value) return
-    setTodos((prev) => [
-      {
-        id: createId(),
-        text: payload.text,
-        completed: false
-      },
-      ...prev
-    ])
+    const createdTodo = await createTodo(payload)
+    setTodos(prev => [createdTodo, ...prev])
   }
 
   const onUpdate = (updateTodo: Todo) => {
