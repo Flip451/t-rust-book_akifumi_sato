@@ -1,4 +1,4 @@
-import { CreateTodoPayload, Todo } from "../../types/todo";
+import { CreateTodoPayload, Todo, TodoId } from "../../types/todo";
 
 export const createTodo = async (payload: CreateTodoPayload) => {
     const res = await fetch('http://localhost:3000/todos', {
@@ -39,4 +39,13 @@ export const updateTodo = async (todo: Todo) => {
     }
     const json: Todo = await res.json()
     return json
-} 
+}
+
+export const deleteTodo = async (todo_id: TodoId) => {
+    const res = await fetch(`http://localhost:3000/todos/${todo_id}`, {
+        method: 'DELETE',
+    })
+    if (!res.ok) {
+        throw new Error("update todo request failed");
+    }
+}
