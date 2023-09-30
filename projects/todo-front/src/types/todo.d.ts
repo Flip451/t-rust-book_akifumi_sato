@@ -6,10 +6,10 @@ export type Todo = {
     completed: boolean
 }
 
-type TodoId = String;
+type TodoId = string;
 
 type TodoText = {
-    value: String
+    value: string
 }
 
 export type CreateTodoPayload = {
