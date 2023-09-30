@@ -6,9 +6,12 @@ mod validator;
 use std::sync::Arc;
 
 use axum::{
+    http::HeaderValue,
     routing::{get, post},
     Router,
 };
+use hyper::header::CONTENT_TYPE;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::repositories::todos::ITodoRepository;
 
@@ -20,7 +23,10 @@ where
     Router::new()
         .route("/", get(root_handlers::index))
         .route("/users", post(user_handlers::create))
-        .route("/todos", get(todo_handlers::all::<T>).post(todo_handlers::create::<T>))
+        .route(
+            "/todos",
+            get(todo_handlers::all::<T>).post(todo_handlers::create::<T>),
+        )
         .route(
             "/todos/:id",
             get(todo_handlers::find::<T>)
@@ -28,6 +34,12 @@ where
                 .delete(todo_handlers::delete::<T>),
         )
         .with_state(Arc::new(repository))
+        .layer(
+            CorsLayer::new()
+                .allow_origin("http://127.0.0.1:3001".parse::<HeaderValue>().unwrap())
+                .allow_methods(Any)
+                .allow_headers(vec![CONTENT_TYPE]),
+        )
 }
 
 #[cfg(test)]
