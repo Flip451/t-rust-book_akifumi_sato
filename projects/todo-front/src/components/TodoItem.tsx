@@ -1,6 +1,7 @@
-import { FC } from "react"
+import { FC, useState } from "react"
 import { Todo, TodoId } from "../types/todo"
-import { Button, Card, Checkbox, Grid, Stack, Typography } from "@mui/material"
+import { Box, Button, Card, Checkbox, Grid, Modal, Stack, TextField, Typography } from "@mui/material"
+import { modalInnerStyle } from "../styles/modal"
 
 type props = {
     todo: Todo
@@ -9,6 +10,9 @@ type props = {
 }
 
 const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
+    const [editing, setEditing] = useState(false)
+    const [editText, setEditText] = useState("")
+
     const handleCompletedCheckbox = (todo: Todo) => {
         onUpdate({
             ...todo,
@@ -18,6 +22,27 @@ const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
 
     const handleDeleteButton = () => {
         onDelete(todo.id)
+    }
+
+    const handleEditButton = () => {
+        setEditing(true)
+    }
+
+    const onCloseEditModal = () => {
+        setEditing(false)
+    }
+
+    const handleSubmitButton = () => {
+        if (!editText) {
+            return
+        }
+        onUpdate({
+            ...todo,
+            text: {
+                value: editText
+            },
+        })
+        setEditing(false)
     }
 
     return (
@@ -30,20 +55,40 @@ const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
                             onChange={() => handleCompletedCheckbox(todo)}
                         />
                     </Grid>
-                    <Grid item xs={9}>
+                    <Grid item xs={8}>
                         <Stack spacing={1}>
-                            <Typography variant="caption">
+                            <Typography variant="caption" fontSize={16}>
                                 {todo.text.value}
                             </Typography>
                         </Stack>
                     </Grid>
-                    <Grid item xs={1}>
-                        <Button onClick={handleDeleteButton} color="error">
-                            DELETE
-                        </Button>
+                    <Grid item xs={2}>
+                        <Stack direction="row" spacing={1}>
+                            <Button onClick={handleEditButton} color="info">
+                                EDIT
+                            </Button>
+                            <Button onClick={handleDeleteButton} color="error">
+                                DELETE
+                            </Button>
+                        </Stack>
                     </Grid>
                 </Grid>
             </Grid>
+            <Modal open={editing} onClose={onCloseEditModal}>
+                <Box sx={modalInnerStyle}>
+                    <Stack spacing={2}>
+                        <TextField
+                            size="small"
+                            label="todo text"
+                            defaultValue={todo.text.value}
+                            onChange={(e) => setEditText(e.target.value)}
+                        />
+                        <Button onClick={handleSubmitButton} color="info">
+                            SUBMIT
+                        </Button>
+                    </Stack>
+                </Box>
+            </Modal>
         </Card>
     )
 }
