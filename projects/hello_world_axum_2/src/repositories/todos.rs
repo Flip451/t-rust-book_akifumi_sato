@@ -1,8 +1,8 @@
 use anyhow::Result;
 use axum::async_trait;
-use thiserror::Error;
 
 use crate::models::todos::*;
+use crate::repositories::RepositoryError;
 
 #[async_trait]
 pub trait ITodoRepository: Clone + Send + Sync + 'static {
@@ -10,14 +10,6 @@ pub trait ITodoRepository: Clone + Send + Sync + 'static {
     async fn find(&self, todo_id: &TodoId) -> Result<Todo>;
     async fn find_all(&self) -> Result<Vec<Todo>>;
     async fn delete(&self, todo: Todo) -> Result<()>;
-}
-
-#[derive(Error, Debug, PartialEq)]
-pub enum TodoRepositoryError {
-    #[error("NotFound, id is {0}")]
-    NotFound(TodoId),
-    #[error("Unexpected Error: [{0}]")]
-    Unexpected(String),
 }
 
 pub mod todo_repository_with_sqlx {
@@ -52,7 +44,7 @@ do update set text=$2, completed=$3
                 .bind(todo.get_completed())
                 .execute(&self.pool)
                 .await
-                .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+                .map_err(|e| RepositoryError::Unexpected(e.to_string()))?;
             Ok(())
         }
 
@@ -63,8 +55,8 @@ do update set text=$2, completed=$3
                 .fetch_one(&self.pool)
                 .await
                 .map_err(|e| match e {
-                    sqlx::Error::RowNotFound => TodoRepositoryError::NotFound(todo_id.clone()),
-                    _ => TodoRepositoryError::Unexpected(e.to_string()),
+                    sqlx::Error::RowNotFound => RepositoryError::NotFound(todo_id.clone()),
+                    _ => RepositoryError::Unexpected(e.to_string()),
                 })?;
             Ok(todo)
         }
@@ -74,7 +66,7 @@ do update set text=$2, completed=$3
             let todo = sqlx::query_as::<_, Todo>(sql)
                 .fetch_all(&self.pool)
                 .await
-                .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+                .map_err(|e| RepositoryError::Unexpected(e.to_string()))?;
             Ok(todo)
         }
 
@@ -86,8 +78,8 @@ do update set text=$2, completed=$3
                 .execute(&self.pool)
                 .await
                 .map_err(|e| match e {
-                    sqlx::Error::RowNotFound => TodoRepositoryError::NotFound(id.clone()),
-                    _ => TodoRepositoryError::Unexpected(e.to_string()),
+                    sqlx::Error::RowNotFound => RepositoryError::NotFound(id.clone()),
+                    _ => RepositoryError::Unexpected(e.to_string()),
                 })?;
             Ok(())
         }
@@ -208,7 +200,7 @@ pub mod in_memory_todo_repository {
             let store = self.read_store_ref();
             match store.get(todo_id) {
                 Some(todo) => Ok(todo.clone()),
-                None => Err(TodoRepositoryError::NotFound(todo_id.clone()).into()),
+                None => Err(RepositoryError::NotFound(todo_id.clone()).into()),
             }
         }
 
@@ -226,7 +218,7 @@ pub mod in_memory_todo_repository {
                     store.remove(id);
                     Ok(())
                 }
-                None => Err(TodoRepositoryError::NotFound(id.clone()).into()),
+                None => Err(RepositoryError::NotFound(id.clone()).into()),
             }
         }
     }

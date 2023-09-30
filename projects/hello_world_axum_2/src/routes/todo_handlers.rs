@@ -12,7 +12,7 @@ use validator::Validate;
 
 use crate::{
     models::todos::{Todo, TodoId, TodoText},
-    repositories::todos::{ITodoRepository, TodoRepositoryError},
+    repositories::{todos::ITodoRepository, RepositoryError},
 };
 
 use super::validator::ValidatedJson;
@@ -39,7 +39,10 @@ where
 {
     let text = payload.text;
     let todo = Todo::new(text);
-    repository.save(&todo).await.or(Err(StatusCode::INTERNAL_SERVER_ERROR))?;
+    repository
+        .save(&todo)
+        .await
+        .or(Err(StatusCode::INTERNAL_SERVER_ERROR))?;
 
     Ok((StatusCode::CREATED, Json(todo)))
 }
@@ -107,7 +110,7 @@ where
             }
         }
         // <https://users.rust-lang.org/t/kind-method-not-found-when-using-anyhow-and-thiserror/81560> を参考に実装
-        Err(error) if error.downcast_ref() == Some(&TodoRepositoryError::NotFound(id)) => {
+        Err(error) if error.downcast_ref() == Some(&RepositoryError::NotFound(id)) => {
             StatusCode::NOT_FOUND
         }
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
