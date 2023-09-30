@@ -134,31 +134,37 @@ mod tests {
 
     use super::*;
     use crate::{
-        repositories::{
-            labels::in_memory_label_repository::InMemoryLabelRepository,
-            todos::in_memory_todo_repository::InMemoryTodoRepository,
-        },
-        routes::{self, tests},
+        repositories::labels::in_memory_label_repository::InMemoryLabelRepository, routes::tests,
     };
 
-    use axum::http::method::Method;
+    use axum::{http::method::Method, routing::get, Router};
     use tower::ServiceExt;
+
+    pub fn create_app<T>(repository: T) -> Router
+    where
+        T: ILabelRepository,
+    {
+        Router::new()
+            .route("/labels", get(all::<T>).post(create::<T>))
+            .route(
+                "/labels/:id",
+                get(find::<T>).patch(update::<T>).delete(delete::<T>),
+            )
+            .with_state(Arc::new(repository))
+    }
 
     #[tokio::test]
     async fn should_create_label() -> Result<()> {
         let label_repository = InMemoryLabelRepository::new();
-        let todo_repository = InMemoryTodoRepository::new();
-        let req_body = r#"{"name": {"value": "should create label"}}"#.to_string();
+        let req_body = r#"{"name": {"value": "label-1"}}"#.to_string();
 
         let req = tests::build_req_with_json("/labels", Method::POST, req_body)?;
-        let res = routes::create_app(todo_repository, label_repository)
-            .oneshot(req)
-            .await?;
+        let res = create_app(label_repository).oneshot(req).await?;
         let res_body: Label = tests::res_to_struct(res).await?;
 
         let name_in_res = res_body.get_name();
 
-        assert_eq!("should create label", name_in_res.to_string());
+        assert_eq!("label-1", name_in_res.to_string());
         Ok(())
     }
 
@@ -166,10 +172,9 @@ mod tests {
     async fn should_find_label() -> Result<()> {
         // リポジトリの作成name
         let label_repository = InMemoryLabelRepository::new();
-        let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Label を作成
-        let label_saved_to_repository = Label::new(LabelName::new("should find label"));
+        let label_saved_to_repository = Label::new(LabelName::new("find-label"));
         label_repository.save(&label_saved_to_repository).await?;
         let label_id_in_repository = label_saved_to_repository.get_id();
 
@@ -178,7 +183,7 @@ mod tests {
             &format!("/labels/{}", label_id_in_repository),
             Method::GET,
         )?;
-        let res = routes::create_app(todo_repository, label_repository).oneshot(req).await?;
+        let res = create_app(label_repository).oneshot(req).await?;
 
         // レスポンスボディを読み込んで Label としてパース
         let res_body: Label = tests::res_to_struct(res).await?;
@@ -186,7 +191,7 @@ mod tests {
         let name_in_res = res_body.get_name();
 
         assert_eq!(label_saved_to_repository, res_body);
-        assert_eq!("should find label", name_in_res.to_string());
+        assert_eq!("find-label", name_in_res.to_string());
 
         Ok(())
     }
@@ -195,27 +200,26 @@ mod tests {
     async fn should_get_all_label() -> Result<()> {
         // リポジトリの作成name
         let label_repository = InMemoryLabelRepository::new();
-        let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Label を作成しつつ
         // リポジトリ内の Label の集合を作成
         let mut labels_in_repository = HashMap::new();
 
-        let label_saved_to_repository = Label::new(LabelName::new("should get label-1"));
+        let label_saved_to_repository = Label::new(LabelName::new("get label-1"));
         label_repository.save(&label_saved_to_repository).await?;
         labels_in_repository.insert(
             label_saved_to_repository.get_id().clone(),
             label_saved_to_repository,
         );
 
-        let label_saved_to_repository = Label::new(LabelName::new("should get label-2"));
+        let label_saved_to_repository = Label::new(LabelName::new("get label-2"));
         label_repository.save(&label_saved_to_repository).await?;
         labels_in_repository.insert(
             label_saved_to_repository.get_id().clone(),
             label_saved_to_repository,
         );
 
-        let label_saved_to_repository = Label::new(LabelName::new("should get label-3"));
+        let label_saved_to_repository = Label::new(LabelName::new("get label-3"));
         label_repository.save(&label_saved_to_repository).await?;
         labels_in_repository.insert(
             label_saved_to_repository.get_id().clone(),
@@ -224,7 +228,7 @@ mod tests {
 
         // リクエストの作成とレスポンスの受信
         let req = tests::build_req_with_empty("/labels", Method::GET)?;
-        let res = routes::create_app(todo_repository, label_repository).oneshot(req).await?;
+        let res = create_app(label_repository).oneshot(req).await?;
 
         // レスポンスボディを読み込んで Vec<Label> としてパース
         let res_body: Vec<Label> = tests::res_to_struct(res).await?;
@@ -258,22 +262,20 @@ mod tests {
     async fn should_update_label() -> Result<()> {
         // リポジトリの作成name
         let label_repository = InMemoryLabelRepository::new();
-        let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Label を作成
-        let label_saved_to_repository = Label::new(LabelName::new("should create label"));
+        let label_saved_to_repository = Label::new(LabelName::new("create-label"));
         label_repository.save(&label_saved_to_repository).await?;
         let label_id_in_repository = label_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
-        let req_json_string =
-            r#"{"name": {"value": "should update label"}, "completed": true}"#.to_string();
+        let req_json_string = r#"{"name": {"value": "update-label"}}"#.to_string();
         let req = tests::build_req_with_json(
             &format!("/labels/{}", label_id_in_repository),
             Method::PATCH,
             req_json_string,
         )?;
-        let res = routes::create_app(todo_repository, label_repository).oneshot(req).await?;
+        let res = create_app(label_repository).oneshot(req).await?;
 
         // レスポンスボディを読み込んで Label としてパース
         let res_body: Label = tests::res_to_struct(res).await?;
@@ -281,7 +283,7 @@ mod tests {
         let name_in_res = res_body.get_name();
 
         assert_eq!(label_saved_to_repository, res_body);
-        assert_eq!("should update label", name_in_res.to_string());
+        assert_eq!("update-label", name_in_res.to_string());
 
         Ok(())
     }
@@ -290,10 +292,9 @@ mod tests {
     async fn should_delete_label() -> Result<()> {
         // リポジトリの作成name
         let label_repository = InMemoryLabelRepository::new();
-        let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Label を作成
-        let label_saved_to_repository = Label::new(LabelName::new("should create label"));
+        let label_saved_to_repository = Label::new(LabelName::new("create-label"));
         label_repository.save(&label_saved_to_repository).await?;
         let label_id_in_repository = label_saved_to_repository.get_id();
 
@@ -302,11 +303,21 @@ mod tests {
             &format!("/labels/{}", label_id_in_repository),
             Method::DELETE,
         )?;
-        let res = routes::create_app(todo_repository, label_repository).oneshot(req).await?;
+        let res = create_app(label_repository).oneshot(req).await?;
 
         // 期待通りの結果を確認
         assert_eq!(StatusCode::NO_CONTENT, res.status());
 
         Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_find_label_by_name() -> Result<()> {
+        todo!()
+    }
+
+    #[tokio::test]
+    async fn should_find_none() -> Result<()> {
+        todo!()
     }
 }

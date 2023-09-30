@@ -65,8 +65,8 @@ pub struct LabelName {
 
 impl<'r> FromRow<'r, PgRow> for LabelName {
     fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
-        let text = row.try_get("name")?;
-        Ok(LabelName { value: text })
+        let name = row.try_get("name")?;
+        Ok(LabelName { value: name })
     }
 }
 

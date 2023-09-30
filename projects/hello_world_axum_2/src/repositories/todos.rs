@@ -14,23 +14,12 @@ pub trait ITodoRepository: Clone + Send + Sync + 'static {
 
 pub mod todo_repository_with_sqlx {
     use axum::async_trait;
-    use sqlx::PgPool;
 
     use super::*;
-
-    #[derive(Clone)]
-    pub struct TodoRepositoryWithSqlx {
-        pool: PgPool,
-    }
-
-    impl TodoRepositoryWithSqlx {
-        pub fn new(pool: PgPool) -> Self {
-            Self { pool }
-        }
-    }
+    use crate::repositories::RepositoryWithSqlx;
 
     #[async_trait]
-    impl ITodoRepository for TodoRepositoryWithSqlx {
+    impl ITodoRepository for RepositoryWithSqlx {
         async fn save(&self, todo: &Todo) -> Result<()> {
             let sql = r#"
 insert into todos (id, text, completed)
@@ -96,7 +85,7 @@ do update set text=$2, completed=$3
         #[tokio::test]
         async fn todo_crud_senario() -> Result<()> {
             let pool = pg_pool::connect_to_pg_pool().await;
-            let repository = TodoRepositoryWithSqlx::new(pool.clone());
+            let repository = RepositoryWithSqlx::new(pool.clone());
 
             let text = TodoText::new("todo text");
             let new_todo = Todo::new(text);

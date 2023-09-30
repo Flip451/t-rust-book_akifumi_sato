@@ -15,23 +15,13 @@ pub trait ILabelRepository: Clone + Send + Sync + 'static {
 
 pub mod label_repository_with_sqlx {
     use axum::async_trait;
-    use sqlx::PgPool;
+
+    use crate::repositories::RepositoryWithSqlx;
 
     use super::*;
 
-    #[derive(Clone)]
-    pub struct LabelRepositoryWithSqlx {
-        pool: PgPool,
-    }
-
-    impl LabelRepositoryWithSqlx {
-        pub fn new(pool: PgPool) -> Self {
-            Self { pool }
-        }
-    }
-
     #[async_trait]
-    impl ILabelRepository for LabelRepositoryWithSqlx {
+    impl ILabelRepository for RepositoryWithSqlx {
         async fn save(&self, label: &Label) -> Result<()> {
             let sql = r#"
 insert into labels (id, name)
@@ -106,7 +96,7 @@ do update set name=$2
         #[tokio::test]
         async fn label_crud_senario() -> Result<()> {
             let pool = pg_pool::connect_to_pg_pool().await;
-            let repository = LabelRepositoryWithSqlx::new(pool.clone());
+            let repository = RepositoryWithSqlx::new(pool.clone());
 
             let name = LabelName::new("label name");
             let new_label = Label::new(name);
@@ -123,6 +113,8 @@ do update set name=$2
                 .expect("failed to find label.");
             assert_eq!(expected, label_found);
             assert_eq!("label name", label_found.get_name().to_string());
+
+            // TODO: find_by_name の Some(_) の場合と None の場合のテスト
 
             // find_all
             let expected = new_label.clone();
@@ -213,7 +205,10 @@ pub mod in_memory_label_repository {
 
         async fn find_by_name(&self, label_name: &LabelName) -> Result<Option<Label>> {
             let store = self.read_store_ref();
-            let label_found = store.iter().find(|(_, label)| {label.get_name() == label_name}).map(|(_, label)| label.clone());
+            let label_found = store
+                .iter()
+                .find(|(_, label)| label.get_name() == label_name)
+                .map(|(_, label)| label.clone());
             Ok(label_found)
         }
 
@@ -269,6 +264,8 @@ pub mod in_memory_label_repository {
                 assert_eq!(expected, label_found);
                 assert_eq!(expected.get_name(), label_found.get_name());
             }
+
+            // TODO: find_by_name の Some(_) の場合と None の場合のテスト
 
             // find_all
             {
