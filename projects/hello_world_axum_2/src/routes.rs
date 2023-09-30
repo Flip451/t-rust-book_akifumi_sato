@@ -1,3 +1,4 @@
+mod label_handlers;
 mod root_handlers;
 mod todo_handlers;
 mod user_handlers;
@@ -13,11 +14,11 @@ use axum::{
 use hyper::header::CONTENT_TYPE;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::repositories::todos::ITodoRepository;
+use crate::repositories::{todos::ITodoRepository, labels::ILabelRepository};
 
 pub fn create_app<T>(repository: T) -> Router
 where
-    T: Send + Sync + 'static,
+    T: ILabelRepository,
     T: ITodoRepository,
 {
     Router::new()
@@ -32,6 +33,16 @@ where
             get(todo_handlers::find::<T>)
                 .patch(todo_handlers::update::<T>)
                 .delete(todo_handlers::delete::<T>),
+        )
+        .route(
+            "/labels",
+            get(label_handlers::all::<T>).post(label_handlers::create::<T>),
+        )
+        .route(
+            "/labels/:id",
+            get(label_handlers::find::<T>)
+                .patch(label_handlers::update::<T>)
+                .delete(label_handlers::delete::<T>),
         )
         .with_state(Arc::new(repository))
         .layer(
@@ -84,6 +95,7 @@ mod tests {
 
         // ボディをバイト列から文字列に変換
         let body = String::from_utf8(bytes.to_vec())?;
+        println!("{}", body);
 
         // ボディを json としてパース
         let data: T = serde_json::from_str(&body)?;

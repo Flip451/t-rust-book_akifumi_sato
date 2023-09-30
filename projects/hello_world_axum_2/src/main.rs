@@ -1,8 +1,5 @@
 use anyhow::Result;
-use hello_world_axum_2::{
-    logs, pg_pool, repositories::todos::todo_repository_with_sqlx::TodoRepositoryWithSqlx,
-    routes::create_app,
-};
+use hello_world_axum_2::{logs, pg_pool, repositories::RepositoryWithSqlx, routes::create_app};
 use std::net::SocketAddr;
 
 #[tokio::main]
@@ -11,7 +8,7 @@ async fn main() -> Result<()> {
     logs::init_log();
 
     let pool = pg_pool::connect_to_pg_pool().await;
-    let repository = TodoRepositoryWithSqlx::new(pool.clone());
+    let repository = RepositoryWithSqlx::new(pool.clone());
 
     // ルーティングの設定
     let app = create_app(repository);
