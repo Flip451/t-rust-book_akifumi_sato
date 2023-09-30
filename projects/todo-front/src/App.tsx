@@ -5,7 +5,7 @@ import { CreateTodoPayload, Todo } from './types/todo'
 import { Box, Stack, Typography } from '@mui/material'
 import TodoForm from './components/TodoForm'
 import TodoList from './components/TodoList'
-import { createTodo, getAllTodo } from './lib/api/todo'
+import { createTodo, getAllTodo, updateTodo } from './lib/api/todo'
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([])
@@ -17,18 +17,10 @@ const TodoApp: FC = () => {
     setTodos(todos)
   }
 
-  const onUpdate = (updateTodo: Todo) => {
-    setTodos(
-      todos.map((todo) => {
-        if (todo.id === updateTodo.id) {
-          return {
-            ...todo,
-            ...updateTodo
-          }
-        }
-        return todo
-      })
-    )
+  const onUpdate = async (newTodo: Todo) => {
+    await updateTodo(newTodo)
+    const todos = await getAllTodo();
+    setTodos(todos)
   }
 
   useEffect(() => {
