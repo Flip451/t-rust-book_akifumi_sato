@@ -1,19 +1,20 @@
-import { useState, FC } from 'react'
+import { useState, FC, useEffect } from 'react'
 import 'modern-css-reset'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { CreateTodoPayload, Todo } from './types/todo'
 import { Box, Stack, Typography } from '@mui/material'
 import TodoForm from './components/TodoForm'
 import TodoList from './components/TodoList'
-import { createTodo } from './lib/api/todo'
+import { createTodo, getAllTodo } from './lib/api/todo'
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([])
 
   const onSubmit = async (payload: CreateTodoPayload) => {
     if (!payload.text.value) return
-    const createdTodo = await createTodo(payload)
-    setTodos(prev => [createdTodo, ...prev])
+    await createTodo(payload)
+    const todos = await getAllTodo()
+    setTodos(todos)
   }
 
   const onUpdate = (updateTodo: Todo) => {
@@ -29,6 +30,13 @@ const TodoApp: FC = () => {
       })
     )
   }
+
+  useEffect(() => {
+    (async () => {
+      const todos = await getAllTodo();
+      setTodos(todos)
+    })()
+  }, [])
 
   return (
     <>

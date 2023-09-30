@@ -16,3 +16,11 @@ export const createTodo = async (payload: CreateTodoPayload) => {
     return json
 }
 
+export const getAllTodo = async () => {
+    const res = await fetch('http://localhost:3000/todos')
+    if (!res.ok) {
+        throw new Error("get all todo request failed");
+    }
+    const json: Todo[] = await res.json()
+    return json
+}
