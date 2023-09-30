@@ -162,3 +162,132 @@ do update set name=$2
         }
     }
 }
+
+#[cfg(test)]
+pub mod in_memory_label_repository {
+    use std::{
+        collections::HashMap,
+        sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    };
+
+    use super::*;
+
+    type LabelStore = HashMap<LabelId, Label>;
+
+    #[derive(Clone)]
+    pub struct InMemoryLabelRepository {
+        store: Arc<RwLock<LabelStore>>,
+    }
+
+    impl InMemoryLabelRepository {
+        pub fn new() -> Self {
+            Self {
+                store: Arc::default(),
+            }
+        }
+
+        fn write_store_ref(&self) -> RwLockWriteGuard<LabelStore> {
+            self.store.write().unwrap()
+        }
+
+        fn read_store_ref(&self) -> RwLockReadGuard<LabelStore> {
+            self.store.read().unwrap()
+        }
+    }
+
+    #[async_trait]
+    impl ILabelRepository for InMemoryLabelRepository {
+        async fn save(&self, label: &Label) -> Result<()> {
+            let mut store = self.write_store_ref();
+            store.insert(label.get_id().clone(), label.clone());
+            Ok(())
+        }
+
+        async fn find(&self, label_id: &LabelId) -> Result<Label> {
+            let store = self.read_store_ref();
+            match store.get(label_id) {
+                Some(label) => Ok(label.clone()),
+                None => Err(RepositoryError::NotFound(label_id.clone()).into()),
+            }
+        }
+
+        async fn find_by_name(&self, label_name: &LabelName) -> Result<Option<Label>> {
+            let store = self.read_store_ref();
+            let label_found = store.iter().find(|(_, label)| {label.get_name() == label_name}).map(|(_, label)| label.clone());
+            Ok(label_found)
+        }
+
+        async fn find_all(&self) -> Result<Vec<Label>> {
+            let store = self.read_store_ref();
+            let labels = store.values().map(|label| label.clone()).collect();
+            Ok(labels)
+        }
+
+        async fn delete(&self, label: Label) -> Result<()> {
+            let mut store = self.write_store_ref();
+            let id = label.get_id();
+            match store.get(id) {
+                Some(_) => {
+                    store.remove(id);
+                    Ok(())
+                }
+                None => Err(RepositoryError::NotFound(id.clone()).into()),
+            }
+        }
+    }
+
+    mod tests {
+        use super::*;
+
+        use anyhow::Result;
+
+        #[tokio::test]
+        async fn label_crud_senario() -> Result<()> {
+            let repository = InMemoryLabelRepository::new();
+
+            let name = LabelName::new("label name");
+            let new_label = Label::new(name);
+            let new_label_id = new_label.get_id();
+
+            // save
+            {
+                let expected = new_label.clone();
+                repository.save(&new_label).await?;
+                let store = repository.read_store_ref();
+                let saved_label = store.get(new_label_id).expect("failed to save label.");
+                assert_eq!(&expected, saved_label);
+                assert_eq!(expected.get_name(), saved_label.get_name());
+            }
+
+            // find
+            {
+                let expected = new_label.clone();
+                let label_found = repository
+                    .find(new_label_id)
+                    .await
+                    .expect("failed to find label.");
+                assert_eq!(expected, label_found);
+                assert_eq!(expected.get_name(), label_found.get_name());
+            }
+
+            // find_all
+            {
+                let expected = vec![new_label.clone()];
+                let labels_found = repository.find_all().await?;
+                assert_eq!(expected, labels_found);
+            }
+
+            // delete
+            {
+                repository
+                    .delete(new_label)
+                    .await
+                    .expect("failed to delete label.");
+                let store = repository.read_store_ref();
+                assert!(store.is_empty());
+            }
+
+            Ok(())
+        }
+    }
+}

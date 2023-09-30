@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, FromRow, Row};
@@ -54,7 +56,7 @@ impl Eq for Label {}
 pub type LabelId = Uuid;
 
 // labelName
-#[derive(Clone, Debug, Deserialize, Serialize, Validate)]
+#[derive(Clone, Debug, Deserialize, Serialize, Validate, PartialEq)]
 pub struct LabelName {
     #[validate(length(min = 1, message = "Can not be empty"))]
     #[validate(length(max = 15, message = "Over text length"))]
@@ -87,18 +89,22 @@ pub struct LabelDomainService<T>
 where
     T: ILabelRepository,
 {
-    repository: T,
+    repository: Arc<T>,
 }
 
 impl<T> LabelDomainService<T>
 where
     T: ILabelRepository,
 {
-    pub async fn is_duplicated(&self, label: Label) -> Result<bool> {
-        if let Some(label_found) = self.repository.find_by_name(label.get_name()).await? {
-            Ok(label_found != label)
-        } else {
-            Ok(false)
+    pub fn new(repository: Arc<T>) -> Self {
+        Self { repository }
+    }
+
+    pub async fn is_duplicated(&self, label: &Label) -> Result<bool> {
+        let label_found = self.repository.find_by_name(label.get_name()).await?;
+        match label_found {
+            Some(label_found) => Ok(&label_found != label),
+            None => Ok(false),
         }
     }
 }

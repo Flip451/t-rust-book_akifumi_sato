@@ -19,7 +19,10 @@ mod tests {
     use super::*;
 
     use crate::{
-        repositories::todos::in_memory_todo_repository::InMemoryTodoRepository,
+        repositories::{
+            labels::in_memory_label_repository::InMemoryLabelRepository,
+            todos::in_memory_todo_repository::InMemoryTodoRepository,
+        },
         routes::{self, tests},
     };
 
@@ -29,11 +32,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_user() -> Result<()> {
-        let repository = InMemoryTodoRepository::new();
+        let label_repository = InMemoryLabelRepository::new();
+        let todo_repository = InMemoryTodoRepository::new();
 
         let req_body = r#"{"user_name": "佐藤 太郎"}"#.to_string();
         let req = tests::build_req_with_json("/users", Method::POST, req_body)?;
-        let res = routes::create_app(repository).oneshot(req).await?;
+        let res = routes::create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await?;
         let res_body: User = tests::res_to_struct(res).await?;
 
         let name_in_res = res_body.get_user_name();

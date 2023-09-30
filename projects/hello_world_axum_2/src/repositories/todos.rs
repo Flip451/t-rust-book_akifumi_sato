@@ -120,7 +120,7 @@ do update set text=$2, completed=$3
             let todos_found = repository.find_all().await?;
             assert!(todos_found
                 .into_iter()
-                .find(|todo| todo.clone() == expected)
+                .find(|todo| todo == &expected)
                 .is_some());
 
             // save (update)

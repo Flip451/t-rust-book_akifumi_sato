@@ -1,3 +1,4 @@
+mod label_handlers;
 mod root_handlers;
 mod todo_handlers;
 mod user_handlers;
@@ -13,27 +14,27 @@ use axum::{
 use hyper::header::CONTENT_TYPE;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::repositories::todos::ITodoRepository;
+use crate::repositories::{todos::ITodoRepository, labels::ILabelRepository};
 
-pub fn create_app<T>(repository: T) -> Router
+pub fn create_app<Todo, Label>(todo_repository: Todo, label_repository: Label) -> Router
 where
-    T: Send + Sync + 'static,
-    T: ITodoRepository,
+    Label: ILabelRepository,
+    Todo: ITodoRepository,
 {
     Router::new()
         .route("/", get(root_handlers::index))
         .route("/users", post(user_handlers::create))
         .route(
             "/todos",
-            get(todo_handlers::all::<T>).post(todo_handlers::create::<T>),
+            get(todo_handlers::all::<Todo>).post(todo_handlers::create::<Todo>),
         )
         .route(
             "/todos/:id",
-            get(todo_handlers::find::<T>)
-                .patch(todo_handlers::update::<T>)
-                .delete(todo_handlers::delete::<T>),
+            get(todo_handlers::find::<Todo>)
+                .patch(todo_handlers::update::<Todo>)
+                .delete(todo_handlers::delete::<Todo>),
         )
-        .with_state(Arc::new(repository))
+        .with_state(Arc::new(todo_repository))
         .layer(
             CorsLayer::new()
                 .allow_origin("http://127.0.0.1:3001".parse::<HeaderValue>().unwrap())

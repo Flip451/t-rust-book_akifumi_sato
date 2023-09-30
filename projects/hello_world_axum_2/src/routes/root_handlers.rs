@@ -5,7 +5,10 @@ pub async fn index() -> &'static str {
 #[cfg(test)]
 mod tests {
     use crate::{
-        repositories::todos::in_memory_todo_repository::InMemoryTodoRepository,
+        repositories::{
+            labels::in_memory_label_repository::InMemoryLabelRepository,
+            todos::in_memory_todo_repository::InMemoryTodoRepository,
+        },
         routes::{self, tests},
     };
 
@@ -15,10 +18,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_root() -> Result<()> {
-        let repository = InMemoryTodoRepository::new();
+        let label_repository = InMemoryLabelRepository::new();
+        let todo_repository = InMemoryTodoRepository::new();
 
         let req = tests::build_req_with_empty("/", Method::GET)?;
-        let res = routes::create_app(repository).oneshot(req).await?;
+        let res = routes::create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await?;
         let bytes = hyper::body::to_bytes(res.into_body()).await?;
         let body = String::from_utf8(bytes.to_vec())?;
 

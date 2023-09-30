@@ -123,7 +123,10 @@ mod tests {
 
     use super::*;
     use crate::{
-        repositories::todos::in_memory_todo_repository::InMemoryTodoRepository,
+        repositories::{
+            labels::in_memory_label_repository::InMemoryLabelRepository,
+            todos::in_memory_todo_repository::InMemoryTodoRepository,
+        },
         routes::{self, tests},
     };
 
@@ -132,11 +135,14 @@ mod tests {
 
     #[tokio::test]
     async fn should_create_todo() -> Result<()> {
-        let repository = InMemoryTodoRepository::new();
+        let label_repository = InMemoryLabelRepository::new();
+        let todo_repository = InMemoryTodoRepository::new();
         let req_body = r#"{"text": {"value": "should create todo"}}"#.to_string();
 
         let req = tests::build_req_with_json("/todos", Method::POST, req_body)?;
-        let res = routes::create_app(repository).oneshot(req).await?;
+        let res = routes::create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await?;
         let res_body: Todo = tests::res_to_struct(res).await?;
 
         let text_in_res = res_body.get_text();
@@ -149,18 +155,21 @@ mod tests {
 
     #[tokio::test]
     async fn should_find_todo() -> Result<()> {
-        // リポジトリの作成
-        let repository = InMemoryTodoRepository::new();
+        // リポジトリの作成name
+        let label_repository = InMemoryLabelRepository::new();
+        let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Todo を作成
         let todo_saved_to_repository = Todo::new(TodoText::new("should find todo"));
-        repository.save(&todo_saved_to_repository).await?;
+        todo_repository.save(&todo_saved_to_repository).await?;
         let todo_id_in_repository = todo_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
         let req =
             tests::build_req_with_empty(&format!("/todos/{}", todo_id_in_repository), Method::GET)?;
-        let res = routes::create_app(repository).oneshot(req).await?;
+        let res = routes::create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await?;
 
         // レスポンスボディを読み込んで Todo としてパース
         let res_body: Todo = tests::res_to_struct(res).await?;
@@ -177,29 +186,30 @@ mod tests {
 
     #[tokio::test]
     async fn should_get_all_todo() -> Result<()> {
-        // リポジトリの作成
-        let repository = InMemoryTodoRepository::new();
+        // リポジトリの作成name
+        let label_repository = InMemoryLabelRepository::new();
+        let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Todo を作成しつつ
         // リポジトリ内の Todo の集合を作成
         let mut todos_in_repository = HashMap::new();
 
         let todo_saved_to_repository = Todo::new(TodoText::new("should get todo-1"));
-        repository.save(&todo_saved_to_repository).await?;
+        todo_repository.save(&todo_saved_to_repository).await?;
         todos_in_repository.insert(
             todo_saved_to_repository.get_id().clone(),
             todo_saved_to_repository,
         );
 
         let todo_saved_to_repository = Todo::new(TodoText::new("should get todo-2"));
-        repository.save(&todo_saved_to_repository).await?;
+        todo_repository.save(&todo_saved_to_repository).await?;
         todos_in_repository.insert(
             todo_saved_to_repository.get_id().clone(),
             todo_saved_to_repository,
         );
 
         let todo_saved_to_repository = Todo::new(TodoText::new("should get todo-3"));
-        repository.save(&todo_saved_to_repository).await?;
+        todo_repository.save(&todo_saved_to_repository).await?;
         todos_in_repository.insert(
             todo_saved_to_repository.get_id().clone(),
             todo_saved_to_repository,
@@ -207,7 +217,9 @@ mod tests {
 
         // リクエストの作成とレスポンスの受信
         let req = tests::build_req_with_empty("/todos", Method::GET)?;
-        let res = routes::create_app(repository).oneshot(req).await?;
+        let res = routes::create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await?;
 
         // レスポンスボディを読み込んで Vec<Todo> としてパース
         let res_body: Vec<Todo> = tests::res_to_struct(res).await?;
@@ -237,12 +249,13 @@ mod tests {
 
     #[tokio::test]
     async fn should_update_todo() -> Result<()> {
-        // リポジトリの作成
-        let repository = InMemoryTodoRepository::new();
+        // リポジトリの作成name
+        let label_repository = InMemoryLabelRepository::new();
+        let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Todo を作成
         let todo_saved_to_repository = Todo::new(TodoText::new("should create todo"));
-        repository.save(&todo_saved_to_repository).await?;
+        todo_repository.save(&todo_saved_to_repository).await?;
         let todo_id_in_repository = todo_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
@@ -253,7 +266,9 @@ mod tests {
             Method::PATCH,
             req_json_string,
         )?;
-        let res = routes::create_app(repository).oneshot(req).await?;
+        let res = routes::create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await?;
 
         // レスポンスボディを読み込んで Todo としてパース
         let res_body: Todo = tests::res_to_struct(res).await?;
@@ -270,12 +285,13 @@ mod tests {
 
     #[tokio::test]
     async fn should_delete_todo() -> Result<()> {
-        // リポジトリの作成
-        let repository = InMemoryTodoRepository::new();
+        // リポジトリの作成name
+        let label_repository = InMemoryLabelRepository::new();
+        let todo_repository = InMemoryTodoRepository::new();
 
         // リポジトリに直接 Todo を作成
         let todo_saved_to_repository = Todo::new(TodoText::new("should create todo"));
-        repository.save(&todo_saved_to_repository).await?;
+        todo_repository.save(&todo_saved_to_repository).await?;
         let todo_id_in_repository = todo_saved_to_repository.get_id();
 
         // リクエストの作成とレスポンスの受信
@@ -283,7 +299,9 @@ mod tests {
             &format!("/todos/{}", todo_id_in_repository),
             Method::DELETE,
         )?;
-        let res = routes::create_app(repository).oneshot(req).await?;
+        let res = routes::create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await?;
 
         // 期待通りの結果を確認
         assert_eq!(StatusCode::NO_CONTENT, res.status());
