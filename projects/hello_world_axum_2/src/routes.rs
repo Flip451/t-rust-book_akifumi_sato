@@ -16,25 +16,35 @@ use tower_http::cors::{Any, CorsLayer};
 
 use crate::repositories::{todos::ITodoRepository, labels::ILabelRepository};
 
-pub fn create_app<Todo, Label>(todo_repository: Todo, label_repository: Label) -> Router
+pub fn create_app<T>(repository: T) -> Router
 where
-    Label: ILabelRepository,
-    Todo: ITodoRepository,
+    T: ILabelRepository,
+    T: ITodoRepository,
 {
     Router::new()
         .route("/", get(root_handlers::index))
         .route("/users", post(user_handlers::create))
         .route(
             "/todos",
-            get(todo_handlers::all::<Todo>).post(todo_handlers::create::<Todo>),
+            get(todo_handlers::all::<T>).post(todo_handlers::create::<T>),
         )
         .route(
             "/todos/:id",
-            get(todo_handlers::find::<Todo>)
-                .patch(todo_handlers::update::<Todo>)
-                .delete(todo_handlers::delete::<Todo>),
+            get(todo_handlers::find::<T>)
+                .patch(todo_handlers::update::<T>)
+                .delete(todo_handlers::delete::<T>),
         )
-        .with_state(Arc::new(todo_repository))
+        .route(
+            "/labels",
+            get(label_handlers::all::<T>).post(label_handlers::create::<T>),
+        )
+        .route(
+            "/labels/:id",
+            get(label_handlers::find::<T>)
+                .patch(label_handlers::update::<T>)
+                .delete(label_handlers::delete::<T>),
+        )
+        .with_state(Arc::new(repository))
         .layer(
             CorsLayer::new()
                 .allow_origin("http://127.0.0.1:3001".parse::<HeaderValue>().unwrap())
@@ -85,6 +95,7 @@ mod tests {
 
         // ボディをバイト列から文字列に変換
         let body = String::from_utf8(bytes.to_vec())?;
+        println!("{}", body);
 
         // ボディを json としてパース
         let data: T = serde_json::from_str(&body)?;
