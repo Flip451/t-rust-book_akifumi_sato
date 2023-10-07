@@ -43,6 +43,9 @@ impl<T: IUserRepository> IUserDeleteApplicationService<T> for UserDeleteApplicat
             .or(Err(UserApplicationError::Unexpected))?
             .ok_or(UserApplicationError::UserNotFound(user_id))?;
 
-        self.user_repository.delete(user).await
+        self.user_repository
+            .delete(user)
+            .await
+            .or(Err(UserApplicationError::Unexpected))
     }
 }

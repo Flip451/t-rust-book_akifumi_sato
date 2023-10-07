@@ -48,10 +48,18 @@ impl<T: IUserRepository> IUserCreateApplicationService<T> for UserCreateApplicat
             .map_err(|e| UserApplicationError::IllegalArgumentError(e.to_string()))?;
         let new_user = User::new(user_name).or(Err(UserApplicationError::Unexpected))?;
 
-        if self.user_service.is_duplicated(&new_user).await? {
+        if self
+            .user_service
+            .is_duplicated(&new_user)
+            .await
+            .or(Err(UserApplicationError::Unexpected))?
+        {
             return Err(UserApplicationError::DuplicatedUser(new_user).into());
         }
 
-        self.user_repository.save(&new_user).await
+        self.user_repository
+            .save(&new_user)
+            .await
+            .or(Err(UserApplicationError::Unexpected))
     }
 }

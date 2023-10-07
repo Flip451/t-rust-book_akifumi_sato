@@ -1,6 +1,6 @@
 use axum::async_trait;
 
-use super::{user_data::UserData, Result};
+use super::{user_application_error::UserApplicationError, user_data::UserData, Result};
 use crate::infra::repository::users::IUserRepository;
 
 // trait of application service to get users
@@ -24,7 +24,11 @@ impl<T: IUserRepository> IUserGetAllApplicationService<T> for UserGetAllApplicat
     }
 
     async fn handle(&self, _: UserGetAllCommand) -> Result<Vec<UserData>> {
-        let users_found = self.user_repository.find_all().await?;
+        let users_found = self
+            .user_repository
+            .find_all()
+            .await
+            .or(Err(UserApplicationError::Unexpected))?;
         Ok(users_found
             .into_iter()
             .map(|user| UserData::new(user))

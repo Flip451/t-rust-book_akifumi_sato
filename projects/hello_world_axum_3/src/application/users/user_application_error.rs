@@ -10,6 +10,8 @@ pub enum UserApplicationError {
     UserNotFound(UserId),
     #[error("Given user is incorrect: [{0}]")]
     IllegalArgumentError(String),
+    #[error("Given user id has incorrect format: [{0}]")]
+    IllegalUserId(String),
     #[error("Unexpected error")]
     Unexpected
 }

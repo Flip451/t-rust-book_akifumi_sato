@@ -29,7 +29,8 @@ impl<T: IUserRepository> IUserGetApplicationService<T> for UserGetApplicationSer
         let UserGetCommand {
             user_id: user_id_string,
         } = command;
-        let user_id = UserId::parse(user_id_string)?;
+        let user_id = UserId::parse(user_id_string)
+            .map_err(|e| UserApplicationError::IllegalUserId(e.to_string()))?;
         let user_found = self
             .user_repository
             .find(&user_id)

@@ -7,10 +7,7 @@ use axum::async_trait;
 
 use crate::{
     domain::models::users::{User, UserId, UserName},
-    infra::{
-        repository::users::{IUserRepository, UserRepositoryError},
-        repository_impl::Result,
-    },
+    infra::repository::users::{IUserRepository, Result, UserRepositoryError},
 };
 
 type TodoStore = HashMap<UserId, User>;
@@ -70,7 +67,7 @@ impl IUserRepository for InMemoryUserRepository {
         match store.get(user_id) {
             Some(_) => store.remove(user_id),
             None => {
-                return Err(UserRepositoryError::NotFound(user_id.clone()).into());
+                return Err(UserRepositoryError::NotFound(user_id.clone()));
             }
         };
         Ok(())

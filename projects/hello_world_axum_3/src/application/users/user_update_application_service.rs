@@ -48,7 +48,7 @@ impl<T: IUserRepository> IUserUpdateApplicationService<T> for UserUpdateApplicat
         } = command;
 
         let user_id = UserId::parse(user_id_string)
-            .map_err(|e| UserApplicationError::IllegalArgumentError(e.to_string()))?;
+            .map_err(|e| UserApplicationError::IllegalUserId(e.to_string()))?;
 
         let mut user = self
             .user_repository
@@ -63,10 +63,10 @@ impl<T: IUserRepository> IUserUpdateApplicationService<T> for UserUpdateApplicat
             user.user_name = user_name;
         }
 
-        if self.user_service.is_duplicated(&user).await? {
+        if self.user_service.is_duplicated(&user).await.or(Err(UserApplicationError::Unexpected))? {
             return Err(UserApplicationError::DuplicatedUser(user).into());
         }
 
-        self.user_repository.save(&user).await
+        self.user_repository.save(&user).await.or(Err(UserApplicationError::Unexpected))
     }
 }
