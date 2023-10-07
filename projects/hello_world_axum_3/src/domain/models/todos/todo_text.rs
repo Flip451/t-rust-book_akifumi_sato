@@ -3,6 +3,7 @@ use thiserror::Error;
 pub use crate::domain::value_object::{Result, ValueObject};
 
 // value object
+#[derive(Debug, Clone)]
 pub struct TodoText {
     value: String,
 }

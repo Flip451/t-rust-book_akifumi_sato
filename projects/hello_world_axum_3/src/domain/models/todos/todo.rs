@@ -7,6 +7,7 @@ use super::todo_id::TodoId;
 use super::todo_text::TodoText;
 
 // entity
+#[derive(Debug, Clone)]
 pub struct Todo {
     todo_id: TodoId,
     pub todo_text: TodoText,
@@ -21,6 +22,10 @@ impl Todo {
             todo_text,
             completed: false,
         })
+    }
+
+    pub fn todo_id(&self) -> &TodoId {
+        &self.todo_id
     }
 }
 

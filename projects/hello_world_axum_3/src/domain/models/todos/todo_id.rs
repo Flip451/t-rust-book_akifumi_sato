@@ -3,7 +3,7 @@ use uuid::Uuid;
 pub use crate::domain::value_object::{Result, ValueObject};
 
 // value object
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct TodoId {
     value: Uuid,
 }

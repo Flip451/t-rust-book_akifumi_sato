@@ -1,4 +1,4 @@
-pub use anyhow::Result as AnyhowResult;
+use anyhow::Result as AnyhowResult;
 use axum::async_trait;
 use thiserror::Error;
 
