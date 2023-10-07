@@ -23,6 +23,10 @@ impl ValueObject for TodoText {
     fn value(&self) -> &Self::Value {
         &self.value
     }
+
+    fn into_value(self) -> Self::Value {
+        self.value
+    }
 }
 
 #[derive(Debug, Error)]

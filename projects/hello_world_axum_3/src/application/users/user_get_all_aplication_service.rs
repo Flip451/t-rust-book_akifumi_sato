@@ -1,4 +1,5 @@
 use axum::async_trait;
+use serde::Deserialize;
 
 use super::{user_application_error::UserApplicationError, user_data::UserData, Result};
 use crate::infra::repository::users::IUserRepository;
@@ -10,6 +11,7 @@ trait IUserGetAllApplicationService<T: IUserRepository> {
     async fn handle(&self, command: UserGetAllCommand) -> Result<Vec<UserData>>;
 }
 
+#[derive(Deserialize)]
 pub struct UserGetAllCommand {}
 
 // impl of application service to get users

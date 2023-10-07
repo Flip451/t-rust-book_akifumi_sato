@@ -1,4 +1,5 @@
 use axum::async_trait;
+use serde::Deserialize;
 
 use super::Result;
 
@@ -21,6 +22,7 @@ trait IUserUpdateApplicationService<T: IUserRepository> {
 }
 
 // command object
+#[derive(Deserialize)]
 pub struct UserUpdateCommand {
     pub user_id: String,
     pub user_name: Option<String>,

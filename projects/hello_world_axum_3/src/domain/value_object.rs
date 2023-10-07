@@ -8,4 +8,5 @@ where
 
     fn new(value: Self::Value) -> Result<Self>;
     fn value(&self) -> &Self::Value;
+    fn into_value(self) -> Self::Value;
 }

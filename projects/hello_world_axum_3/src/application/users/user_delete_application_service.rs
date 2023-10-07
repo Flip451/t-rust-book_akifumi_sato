@@ -1,4 +1,5 @@
 use axum::async_trait;
+use serde::Deserialize;
 
 use super::Result;
 
@@ -14,6 +15,7 @@ trait IUserDeleteApplicationService<T: IUserRepository> {
 }
 
 // command object
+#[derive(Deserialize)]
 struct UserDeleteCommand {
     pub user_id: String,
 }

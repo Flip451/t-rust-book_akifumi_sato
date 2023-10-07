@@ -18,6 +18,10 @@ impl ValueObject for UserId {
     fn value(&self) -> &Self::Value {
         &self.value
     }
+
+    fn into_value(self) -> Self::Value {
+        self.value
+    }
 }
 
 impl UserId {

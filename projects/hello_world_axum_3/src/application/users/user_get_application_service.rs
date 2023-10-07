@@ -1,4 +1,5 @@
 use axum::async_trait;
+use serde::Deserialize;
 
 use super::{user_application_error::UserApplicationError, user_data::UserData, Result};
 use crate::{domain::models::users::UserId, infra::repository::users::IUserRepository};
@@ -10,6 +11,7 @@ trait IUserGetApplicationService<T: IUserRepository> {
     async fn handle(&self, command: UserGetCommand) -> Result<UserData>;
 }
 
+#[derive(Deserialize)]
 pub struct UserGetCommand {
     pub user_id: String,
 }

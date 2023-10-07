@@ -1,21 +1,21 @@
+use serde::Serialize;
 use uuid::Uuid;
 
 use crate::domain::{models::users::User, value_object::ValueObject};
 
-pub struct UserData(User);
+#[derive(Serialize)]
+pub struct UserData {
+    pub user_id: Uuid,
+    pub user_name: String,
+}
 
 impl UserData {
-    pub fn new(source: User) -> Self {
-        Self(source)
-    }
-
-    pub fn get_user_id(&self) -> &Uuid {
-        let UserData(user) = self;
-        user.user_id().value()
-    }
-
-    pub fn get_user_name(&self) -> &String {
-        let UserData(user) = self;
-        user.user_name.value()
+    pub fn new(user: User) -> Self {
+        let user_id = user.user_id().clone().into_value();
+        let User { user_name, .. } = user;
+        Self {
+            user_id,
+            user_name: user_name.into_value(),
+        }
     }
 }

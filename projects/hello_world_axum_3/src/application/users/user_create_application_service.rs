@@ -1,4 +1,5 @@
 use axum::async_trait;
+use serde::Deserialize;
 
 use super::Result;
 
@@ -21,6 +22,7 @@ trait IUserCreateApplicationService<T: IUserRepository> {
 }
 
 // command object
+#[derive(Deserialize)]
 struct UserCreateCommand {
     user_name: String,
 }

@@ -24,6 +24,10 @@ impl ValueObject for UserName {
     fn value(&self) -> &Self::Value {
         &self.value
     }
+
+    fn into_value(self) -> Self::Value {
+        self.value
+    }
 }
 
 #[derive(Debug, Error)]
