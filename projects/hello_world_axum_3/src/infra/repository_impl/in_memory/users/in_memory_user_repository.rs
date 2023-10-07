@@ -13,7 +13,7 @@ use crate::{
 type TodoStore = HashMap<UserId, User>;
 
 #[derive(Clone)]
-struct InMemoryUserRepository {
+pub struct InMemoryUserRepository {
     store: Arc<RwLock<TodoStore>>,
 }
 

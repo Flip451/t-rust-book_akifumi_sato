@@ -1,14 +1,16 @@
+use std::sync::Arc;
+
 use crate::{
     domain::models::users::User,
     infra::repository::users::{IUserRepository, Result},
 };
 
 pub struct UserService<T: IUserRepository> {
-    user_repository: T,
+    user_repository: Arc<T>,
 }
 
 impl<T: IUserRepository> UserService<T> {
-    pub fn new(user_repository: T) -> Self {
+    pub fn new(user_repository: Arc<T>) -> Self {
         Self { user_repository }
     }
 

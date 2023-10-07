@@ -1,7 +1,8 @@
-use axum::async_trait;
-use serde::Deserialize;
+use std::sync::Arc;
 
-use super::Result;
+use axum::async_trait;
+
+use super::{user_data::UserData, Result};
 
 use crate::{
     domain::{
@@ -16,34 +17,33 @@ use super::user_application_error::UserApplicationError;
 
 // trait of application service to update user
 #[async_trait]
-trait IUserUpdateApplicationService<T: IUserRepository> {
-    fn new(user_repository: T, user_service: UserService<T>) -> Self;
-    async fn handle(&self, command: UserUpdateCommand) -> Result<()>;
+pub trait IUserUpdateApplicationService<T: IUserRepository> {
+    fn new(user_repository: Arc<T>) -> Self;
+    async fn handle(&self, command: UserUpdateCommand) -> Result<UserData>;
 }
 
 // command object
-#[derive(Deserialize)]
 pub struct UserUpdateCommand {
     pub user_id: String,
     pub user_name: Option<String>,
 }
 
 // impl of application service to update user
-struct UserUpdateApplicationService<T: IUserRepository> {
-    user_repository: T,
+pub struct UserUpdateApplicationService<T: IUserRepository> {
+    user_repository: Arc<T>,
     user_service: UserService<T>,
 }
 
 #[async_trait]
 impl<T: IUserRepository> IUserUpdateApplicationService<T> for UserUpdateApplicationService<T> {
-    fn new(user_repository: T, user_service: UserService<T>) -> Self {
+    fn new(user_repository: Arc<T>) -> Self {
         Self {
-            user_repository,
-            user_service,
+            user_repository: user_repository.clone(),
+            user_service: UserService::new(user_repository),
         }
     }
 
-    async fn handle(&self, command: UserUpdateCommand) -> Result<()> {
+    async fn handle(&self, command: UserUpdateCommand) -> Result<UserData> {
         let UserUpdateCommand {
             user_id: user_id_string,
             user_name: user_name_string,
@@ -65,10 +65,20 @@ impl<T: IUserRepository> IUserUpdateApplicationService<T> for UserUpdateApplicat
             user.user_name = user_name;
         }
 
-        if self.user_service.is_duplicated(&user).await.or(Err(UserApplicationError::Unexpected))? {
+        if self
+            .user_service
+            .is_duplicated(&user)
+            .await
+            .or(Err(UserApplicationError::Unexpected))?
+        {
             return Err(UserApplicationError::DuplicatedUser(user).into());
         }
 
-        self.user_repository.save(&user).await.or(Err(UserApplicationError::Unexpected))
+        self.user_repository
+            .save(&user)
+            .await
+            .or(Err(UserApplicationError::Unexpected))?;
+
+        Ok(UserData::new(user))
     }
 }

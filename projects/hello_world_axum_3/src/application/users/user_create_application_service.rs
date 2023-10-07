@@ -1,7 +1,8 @@
-use axum::async_trait;
-use serde::Deserialize;
+use std::sync::Arc;
 
-use super::Result;
+use axum::async_trait;
+
+use super::{Result, user_data::UserData};
 
 use crate::{
     domain::{
@@ -16,33 +17,32 @@ use super::user_application_error::UserApplicationError;
 
 // trait of application service to create user
 #[async_trait]
-trait IUserCreateApplicationService<T: IUserRepository> {
-    fn new(user_repository: T, user_service: UserService<T>) -> Self;
-    async fn handle(&self, command: UserCreateCommand) -> Result<()>;
+pub trait IUserCreateApplicationService<T: IUserRepository> {
+    fn new(user_repository: Arc<T>) -> Self;
+    async fn handle(&self, command: UserCreateCommand) -> Result<UserData>;
 }
 
 // command object
-#[derive(Deserialize)]
-struct UserCreateCommand {
-    user_name: String,
+pub struct UserCreateCommand {
+    pub user_name: String,
 }
 
 // impl of application service to create user
-struct UserCreateApplicationService<T: IUserRepository> {
-    user_repository: T,
+pub struct UserCreateApplicationService<T: IUserRepository> {
+    user_repository: Arc<T>,
     user_service: UserService<T>,
 }
 
 #[async_trait]
 impl<T: IUserRepository> IUserCreateApplicationService<T> for UserCreateApplicationService<T> {
-    fn new(user_repository: T, user_service: UserService<T>) -> Self {
+    fn new(user_repository: Arc<T>) -> Self {
         Self {
-            user_repository,
-            user_service,
+            user_repository: user_repository.clone(),
+            user_service: UserService::new(user_repository),
         }
     }
 
-    async fn handle(&self, command: UserCreateCommand) -> Result<()> {
+    async fn handle(&self, command: UserCreateCommand) -> Result<UserData> {
         let UserCreateCommand {
             user_name: user_name_string,
         } = command;
@@ -62,6 +62,8 @@ impl<T: IUserRepository> IUserCreateApplicationService<T> for UserCreateApplicat
         self.user_repository
             .save(&new_user)
             .await
-            .or(Err(UserApplicationError::Unexpected))
+            .or(Err(UserApplicationError::Unexpected))?;
+
+        Ok(UserData::new(new_user))
     }
 }

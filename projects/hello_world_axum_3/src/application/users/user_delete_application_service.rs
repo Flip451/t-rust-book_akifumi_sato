@@ -1,5 +1,6 @@
+use std::sync::Arc;
+
 use axum::async_trait;
-use serde::Deserialize;
 
 use super::Result;
 
@@ -9,25 +10,24 @@ use super::user_application_error::UserApplicationError;
 
 // trait of application service to delete user
 #[async_trait]
-trait IUserDeleteApplicationService<T: IUserRepository> {
-    fn new(user_repository: T) -> Self;
+pub trait IUserDeleteApplicationService<T: IUserRepository> {
+    fn new(user_repository: Arc<T>) -> Self;
     async fn handle(&self, command: UserDeleteCommand) -> Result<()>;
 }
 
 // command object
-#[derive(Deserialize)]
-struct UserDeleteCommand {
+pub struct UserDeleteCommand {
     pub user_id: String,
 }
 
 // impl of application service to delete user
-struct UserDeleteApplicationService<T: IUserRepository> {
-    user_repository: T,
+pub struct UserDeleteApplicationService<T: IUserRepository> {
+    user_repository: Arc<T>,
 }
 
 #[async_trait]
 impl<T: IUserRepository> IUserDeleteApplicationService<T> for UserDeleteApplicationService<T> {
-    fn new(user_repository: T) -> Self {
+    fn new(user_repository: Arc<T>) -> Self {
         Self { user_repository }
     }
 

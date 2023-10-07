@@ -1,3 +1,4 @@
+use serde::Serialize;
 use thiserror::Error;
 
 use crate::domain::models::users::{User, UserId};
@@ -13,6 +14,15 @@ pub enum UserApplicationError {
     #[error("Given user id has incorrect format: [{0}]")]
     IllegalUserId(String),
     #[error("Unexpected error")]
-    Unexpected
+    Unexpected,
 }
 
+// <https://github.com/serde-rs/serde/issues/2268#issuecomment-1238962452> を参考に実装
+impl Serialize for UserApplicationError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_ref())
+    }
+}

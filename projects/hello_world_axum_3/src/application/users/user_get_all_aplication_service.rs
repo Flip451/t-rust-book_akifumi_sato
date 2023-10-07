@@ -1,27 +1,27 @@
+use std::sync::Arc;
+
 use axum::async_trait;
-use serde::Deserialize;
 
 use super::{user_application_error::UserApplicationError, user_data::UserData, Result};
 use crate::infra::repository::users::IUserRepository;
 
 // trait of application service to get users
 #[async_trait]
-trait IUserGetAllApplicationService<T: IUserRepository> {
-    fn new(user_repository: T) -> Self;
+pub trait IUserGetAllApplicationService<T: IUserRepository> {
+    fn new(user_repository: Arc<T>) -> Self;
     async fn handle(&self, command: UserGetAllCommand) -> Result<Vec<UserData>>;
 }
 
-#[derive(Deserialize)]
 pub struct UserGetAllCommand {}
 
 // impl of application service to get users
 pub struct UserGetAllApplicationService<T: IUserRepository> {
-    user_repository: T,
+    user_repository: Arc<T>,
 }
 
 #[async_trait]
 impl<T: IUserRepository> IUserGetAllApplicationService<T> for UserGetAllApplicationService<T> {
-    fn new(user_repository: T) -> Self {
+    fn new(user_repository: Arc<T>) -> Self {
         Self { user_repository }
     }
 
