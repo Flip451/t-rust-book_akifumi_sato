@@ -3,7 +3,7 @@ use thiserror::Error;
 pub use crate::domain::value_object::{Result, ValueObject};
 
 // value object
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserName {
     value: String,
 }

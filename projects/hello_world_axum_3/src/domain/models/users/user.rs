@@ -7,7 +7,7 @@ use super::user_id::UserId;
 use super::user_name::UserName;
 
 // entity
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct User {
     user_id: UserId,
     pub user_name: UserName,
