@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::async_trait;
 
-use super::{Result, user_data::UserData};
+use super::{user_data::UserData, Result};
 
 use crate::{
     domain::{
@@ -65,5 +65,131 @@ impl<T: IUserRepository> IUserCreateApplicationService<T> for UserCreateApplicat
             .or(Err(UserApplicationError::Unexpected))?;
 
         Ok(UserData::new(new_user))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use uuid::Uuid;
+
+    use crate::{
+        domain::models::users::UserId,
+        infra::repository_impl::in_memory::users::in_memory_user_repository::InMemoryUserRepository,
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_success_min_user_name() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+        let user_create_application_service = UserCreateApplicationService::new(repository.clone());
+
+        // Is it possible to enter a 3-letter name?
+        let command = UserCreateCommand {
+            user_name: "123".to_string(),
+        };
+        let user_data = user_create_application_service.handle(command).await?;
+
+        assert_eq!("123", user_data.user_name);
+
+        // get user saved in store
+        let store = repository.read_store_ref();
+        let stored_user = store.get(&UserId::new(user_data.user_id).unwrap()).unwrap();
+
+        assert_eq!("123", stored_user.user_name.value());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_success_max_user_name() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+        let user_create_application_service = UserCreateApplicationService::new(repository.clone());
+
+        // Is it possible to enter a 19-letter name?
+        let command = UserCreateCommand {
+            user_name: "1234567890123456789".to_string(),
+        };
+        let user_data = user_create_application_service.handle(command).await?;
+
+        assert_eq!("1234567890123456789", user_data.user_name);
+
+        // get user saved in store
+        let store = repository.read_store_ref();
+        let stored_user = store.get(&UserId::new(user_data.user_id).unwrap()).unwrap();
+
+        assert_eq!("1234567890123456789", stored_user.user_name.value());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_name_is_too_short() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+        let user_create_application_service = UserCreateApplicationService::new(repository.clone());
+
+        // Is it possible to enter a 2-letter name?
+        let command = UserCreateCommand {
+            user_name: "12".to_string(),
+        };
+        let user_data = user_create_application_service.handle(command).await;
+
+        assert!(user_data.is_err());
+        assert_eq!(
+            Err(UserApplicationError::IllegalArgumentError(
+                "User name must be at least 3 characters.".to_string()
+            )),
+            user_data
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_name_is_too_long() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+        let user_create_application_service = UserCreateApplicationService::new(repository.clone());
+
+        // Is it possible to enter a 20-letter name?
+        let command = UserCreateCommand {
+            user_name: "12345678901234567890".to_string(),
+        };
+        let user_data = user_create_application_service.handle(command).await;
+
+        assert!(user_data.is_err());
+        assert_eq!(
+            Err(UserApplicationError::IllegalArgumentError(
+                "User name must be less than 20 characters.".to_string()
+            )),
+            user_data
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_is_duplicated() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+
+        // Put the data in advance
+        {
+            let mut store = repository.write_store_ref();
+            store.insert(
+                UserId::new(Uuid::new_v4())?,
+                User::new(UserName::new("tester-1".to_string())?)?,
+            );
+        }
+
+        let user_create_application_service = UserCreateApplicationService::new(repository.clone());
+
+        // Attempt to insert duplicate data
+        let command = UserCreateCommand {
+            user_name: "tester-1".to_string(),
+        };
+        let user_data = user_create_application_service.handle(command).await;
+
+        assert!(matches!(
+            user_data,
+            Err(UserApplicationError::DuplicatedUser(_))
+        ));
+
+        Ok(())
     }
 }

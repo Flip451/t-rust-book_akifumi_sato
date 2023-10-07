@@ -24,11 +24,11 @@ impl InMemoryUserRepository {
         }
     }
 
-    fn write_store_ref(&self) -> RwLockWriteGuard<TodoStore> {
+    pub fn write_store_ref(&self) -> RwLockWriteGuard<TodoStore> {
         self.store.write().unwrap()
     }
 
-    fn read_store_ref(&self) -> RwLockReadGuard<TodoStore> {
+    pub fn read_store_ref(&self) -> RwLockReadGuard<TodoStore> {
         self.store.read().unwrap()
     }
 }

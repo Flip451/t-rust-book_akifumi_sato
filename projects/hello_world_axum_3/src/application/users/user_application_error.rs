@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::domain::models::users::{User, UserId};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum UserApplicationError {
     #[error("Given user is duplicated: [given user: {0:?}]")]
     DuplicatedUser(User),

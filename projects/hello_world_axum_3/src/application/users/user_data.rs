@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::domain::{models::users::User, value_object::ValueObject};
 
-#[derive(Serialize)]
+#[derive(Serialize, PartialEq, Debug)]
 pub struct UserData {
     pub user_id: Uuid,
     pub user_name: String,
