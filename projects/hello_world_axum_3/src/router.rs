@@ -9,6 +9,11 @@ use hyper::header::CONTENT_TYPE;
 use sqlx::PgPool;
 use tower_http::cors::{Any, CorsLayer};
 
+#[cfg(test)]
+use crate::infra::repository_impl::in_memory::{
+    todos::in_memory_todo_repository::InMemoryTodoRepository,
+    users::in_memory_user_repository::InMemoryUserRepository,
+};
 use crate::{
     application::{
         todos::{
@@ -28,15 +33,9 @@ use crate::{
     },
     infra::{
         repository::{todos::ITodoRepository, users::IUserRepository},
-        repository_impl::{
-            in_memory::{
-                todos::in_memory_todo_repository::InMemoryTodoRepository,
-                users::in_memory_user_repository::InMemoryUserRepository,
-            },
-            sqlx::{
-                todo_repository_with_sqlx::TodoRepositoryWithSqlx,
-                user_repository_with_sqlx::UserRepositoryWithSqlx,
-            },
+        repository_impl::sqlx::{
+            todo_repository_with_sqlx::TodoRepositoryWithSqlx,
+            user_repository_with_sqlx::UserRepositoryWithSqlx,
         },
     },
 };
@@ -50,6 +49,7 @@ where
     user_repository: UserRep,
 }
 
+#[cfg(test)]
 impl ArgCreateApp<InMemoryTodoRepository, InMemoryUserRepository> {
     pub fn new() -> Self {
         let todo_repository = InMemoryTodoRepository::new();
