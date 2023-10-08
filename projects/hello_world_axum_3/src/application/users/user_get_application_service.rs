@@ -37,10 +37,88 @@ impl<T: IUserRepository> IUserGetApplicationService<T> for UserGetApplicationSer
             .user_repository
             .find(&user_id)
             .await
-            .or(Err(UserApplicationError::Unexpected))?;
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?;
         match user_found {
             Some(user) => Ok(UserData::new(user)),
             None => Err(UserApplicationError::UserNotFound(user_id).into()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use uuid::Uuid;
+
+    use crate::{
+        domain::{
+            models::users::{User, UserName},
+            value_object::ValueObject,
+        },
+        infra::repository_impl::in_memory::users::in_memory_user_repository::InMemoryUserRepository,
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn should_get_user() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+
+        let user = User::new(UserName::new("tester-1".to_string())?)?;
+        let user_id = user.user_id().clone();
+
+        // Put the data in advance
+        {
+            let mut store = repository.write_store_ref();
+            store.insert(user_id.clone(), user.clone());
+        }
+
+        // Get stored user
+        let user_get_application_service = UserGetApplicationService::new(repository.clone());
+        let command = UserGetCommand {
+            user_id: user_id.value().to_string(),
+        };
+        let user_found = user_get_application_service.handle(command).await?;
+
+        assert_eq!(UserData::new(user), user_found);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_target_user_does_not_exist() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+
+        // try to get user which does not exist
+        let user_get_application_service = UserGetApplicationService::new(repository.clone());
+        let command = UserGetCommand {
+            user_id: Uuid::new_v4().to_string(),
+        };
+        let result_of_user_delete = user_get_application_service.handle(command).await;
+
+        assert!(matches!(
+            result_of_user_delete,
+            Err(UserApplicationError::UserNotFound(_))
+        ));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_id_has_incorrect_format() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+
+        // try to get user with illegal-formated user-id
+        let user_get_application_service = UserGetApplicationService::new(repository.clone());
+        let command = UserGetCommand {
+            user_id: "illegal-formated-user-id".to_string(),
+        };
+        let result_of_user_delete = user_get_application_service.handle(command).await;
+
+        assert!(matches!(
+            result_of_user_delete,
+            Err(UserApplicationError::IllegalUserId(_))
+        ));
+
+        Ok(())
     }
 }

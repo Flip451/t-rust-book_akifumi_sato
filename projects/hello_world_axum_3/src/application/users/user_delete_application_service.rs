@@ -4,7 +4,10 @@ use axum::async_trait;
 
 use super::Result;
 
-use crate::{domain::models::users::UserId, infra::repository::users::IUserRepository};
+use crate::{
+    domain::models::users::UserId,
+    infra::repository::users::{IUserRepository, UserRepositoryError},
+};
 
 use super::user_application_error::UserApplicationError;
 
@@ -36,18 +39,108 @@ impl<T: IUserRepository> IUserDeleteApplicationService<T> for UserDeleteApplicat
             user_id: user_id_string,
         } = command;
         let user_id = UserId::parse(user_id_string)
-            .map_err(|e| UserApplicationError::IllegalArgumentError(e.to_string()))?;
+            .map_err(|e| UserApplicationError::IllegalUserId(e.to_string()))?;
 
         let user = self
             .user_repository
             .find(&user_id)
             .await
-            .or(Err(UserApplicationError::Unexpected))?
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?
             .ok_or(UserApplicationError::UserNotFound(user_id))?;
 
         self.user_repository
             .delete(user)
             .await
-            .or(Err(UserApplicationError::Unexpected))
+            .map_err(|e| match e {
+                UserRepositoryError::NotFound(user_id) => {
+                    UserApplicationError::UserNotFound(user_id)
+                }
+                UserRepositoryError::Unexpected(e) => {
+                    UserApplicationError::Unexpected(e.to_string())
+                }
+            })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use anyhow::Result;
+    use uuid::Uuid;
+
+    use super::*;
+    use crate::{
+        domain::{
+            models::users::{User, UserName},
+            value_object::ValueObject,
+        },
+        infra::repository_impl::in_memory::users::in_memory_user_repository::InMemoryUserRepository,
+    };
+
+    #[tokio::test]
+    async fn should_delete_user() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+
+        let user = User::new(UserName::new("tester-1".to_string())?)?;
+        let user_id = user.user_id().clone();
+
+        // Put the data in advance
+        {
+            let mut store = repository.write_store_ref();
+            store.insert(user_id.clone(), user);
+        }
+
+        // Delete stored user
+        let user_delete_application_service = UserDeleteApplicationService::new(repository.clone());
+        let command = UserDeleteCommand {
+            user_id: user_id.value().to_string(),
+        };
+        user_delete_application_service.handle(command).await?;
+
+        // check the store is empty
+        {
+            let store = repository.read_store_ref();
+            assert!(store.is_empty());
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_id_has_incorrect_format() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+
+        // try to delete user with illegal-formated user-id
+        let user_delete_application_service = UserDeleteApplicationService::new(repository.clone());
+        let command = UserDeleteCommand {
+            user_id: "incorrect-user-id".to_string(),
+        };
+        let result_of_user_delete = user_delete_application_service.handle(command).await;
+
+        assert!(matches!(
+            result_of_user_delete,
+            Err(UserApplicationError::IllegalUserId(_))
+        ));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_target_user_does_not_exist() -> Result<()> {
+        let repository = Arc::new(InMemoryUserRepository::new());
+
+        // try to delete user which does not exist
+        let user_delete_application_service = UserDeleteApplicationService::new(repository.clone());
+        let command = UserDeleteCommand {
+            user_id: Uuid::new_v4().to_string(),
+        };
+        let result_of_user_delete = user_delete_application_service.handle(command).await;
+
+        assert!(matches!(
+            result_of_user_delete,
+            Err(UserApplicationError::UserNotFound(_))
+        ));
+
+        Ok(())
     }
 }
