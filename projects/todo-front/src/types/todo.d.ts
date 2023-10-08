@@ -8,9 +8,7 @@ export type Todo = {
 
 type TodoId = string;
 
-type TodoText = {
-    value: string
-}
+type TodoText = string;
 
 export type CreateTodoPayload = {
     text: TodoText

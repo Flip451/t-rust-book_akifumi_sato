@@ -38,9 +38,7 @@ const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
         }
         onUpdate({
             ...todo,
-            text: {
-                value: editText
-            },
+            text: editText,
         })
         setEditing(false)
     }
@@ -58,7 +56,7 @@ const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
                     <Grid item xs={8}>
                         <Stack spacing={1}>
                             <Typography variant="caption" fontSize={16}>
-                                {todo.text.value}
+                                {todo.text}
                             </Typography>
                         </Stack>
                     </Grid>
@@ -80,7 +78,7 @@ const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
                         <TextField
                             size="small"
                             label="todo text"
-                            defaultValue={todo.text.value}
+                            defaultValue={todo.text}
                             onChange={(e) => setEditText(e.target.value)}
                         />
                         <Button onClick={handleSubmitButton} color="info">
