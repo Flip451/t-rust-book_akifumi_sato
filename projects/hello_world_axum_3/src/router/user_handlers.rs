@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{Path, State},
+    extract::{Extension, Path},
     response::IntoResponse,
     Json,
 };
@@ -48,7 +48,7 @@ impl UserUpdatePayload {
 }
 
 pub async fn create<Rep, AS>(
-    State(repository): State<Arc<Rep>>,
+    Extension(repository): Extension<Arc<Rep>>,
     Json(payload): Json<UserCreatePayload>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
 where
@@ -81,7 +81,7 @@ where
 }
 
 pub async fn get<Rep, AS>(
-    State(repository): State<Arc<Rep>>,
+    Extension(repository): Extension<Arc<Rep>>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
 where
@@ -114,7 +114,7 @@ where
 }
 
 pub async fn get_all<Rep, AS>(
-    State(repository): State<Arc<Rep>>,
+    Extension(repository): Extension<Arc<Rep>>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
 where
     Rep: IUserRepository,
@@ -146,7 +146,7 @@ where
 }
 
 pub async fn update<Rep, AS>(
-    State(repository): State<Arc<Rep>>,
+    Extension(repository): Extension<Arc<Rep>>,
     Path(id): Path<String>,
     Json(payload): Json<UserUpdatePayload>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
@@ -180,7 +180,7 @@ where
 }
 
 pub async fn delete<Rep, AS>(
-    State(repository): State<Arc<Rep>>,
+    Extension(repository): Extension<Arc<Rep>>,
     Path(id): Path<String>,
 ) -> Result<StatusCode, impl IntoResponse>
 where

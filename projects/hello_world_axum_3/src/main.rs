@@ -2,15 +2,20 @@ use std::net::SocketAddr;
 
 use anyhow::Result;
 
-use hello_world_axum_3::{log::init_log, router::create_app, infra::repository_impl::in_memory::users::in_memory_user_repository::InMemoryUserRepository};
+use hello_world_axum_3::{
+    infra::repository_impl::in_memory::{
+        todos::in_memory_todo_repository::InMemoryTodoRepository,
+        users::in_memory_user_repository::InMemoryUserRepository,
+    },
+    log::init_log,
+    router::{create_app, ArgCreateApp},
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     init_log();
 
-    let user_repository = InMemoryUserRepository::new();
-
-    let app = create_app(user_repository);
+    let app = create_app(ArgCreateApp::<InMemoryTodoRepository, InMemoryUserRepository>::new());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
