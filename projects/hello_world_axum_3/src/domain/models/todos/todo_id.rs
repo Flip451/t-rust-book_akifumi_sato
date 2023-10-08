@@ -23,3 +23,11 @@ impl ValueObject for TodoId {
         self.value
     }
 }
+
+impl TodoId {
+    pub fn parse(s: String) -> Result<Self> {
+        Ok(Self {
+            value: Uuid::try_parse(&s)?,
+        })
+    }
+}
