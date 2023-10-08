@@ -19,10 +19,10 @@ struct TodoFromRow {
 
 impl TodoFromRow {
     fn into_todo(self) -> Result<Todo> {
-        let todo_id = TodoId::new(self.id)
-            .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
-        let todo_text = TodoText::new(self.text)
-            .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+        let todo_id =
+            TodoId::new(self.id).map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+        let todo_text =
+            TodoText::new(self.text).map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
         let completed = self.completed;
         Ok(Todo::build(todo_id, todo_text, completed))
     }
@@ -64,10 +64,7 @@ do update set text=$2, completed=$3
             .bind(todo_id.value())
             .fetch_optional(&self.pool)
             .await
-            .map_err(|e| match e {
-                sqlx::Error::RowNotFound => TodoRepositoryError::NotFound(todo_id.clone()),
-                _ => TodoRepositoryError::Unexpected(e.to_string()),
-            })?;
+            .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
         let todo = todo_from_row.map(|row| row.into_todo()).transpose()?;
         Ok(todo)
     }
