@@ -4,7 +4,9 @@ mod user_handlers;
 
 use std::sync::Arc;
 
-use axum::{routing::get, Extension, Router};
+use axum::{http::HeaderValue, routing::get, Extension, Router};
+use hyper::header::CONTENT_TYPE;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
     application::{
@@ -41,8 +43,7 @@ where
     user_repository: UserRep,
 }
 
-impl ArgCreateApp<InMemoryTodoRepository, InMemoryUserRepository>
-{
+impl ArgCreateApp<InMemoryTodoRepository, InMemoryUserRepository> {
     pub fn new() -> Self {
         let todo_repository = InMemoryTodoRepository::new();
         let user_repository = InMemoryUserRepository::new();
@@ -89,4 +90,10 @@ where
                 .delete(todo_handlers::delete::<TodoRep, TodoDeleteApplicationService<TodoRep>>),
         )
         .layer(Extension(Arc::new(todo_repository)))
+        .layer(
+            CorsLayer::new()
+                .allow_origin("http://127.0.0.1:3001".parse::<HeaderValue>().unwrap())
+                .allow_methods(Any)
+                .allow_headers(vec![CONTENT_TYPE]),
+        )
 }
