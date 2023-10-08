@@ -24,6 +24,14 @@ impl Todo {
         })
     }
 
+    pub fn build(todo_id: TodoId, todo_text: TodoText, completed: bool) -> Self {
+        Self {
+            todo_id,
+            todo_text,
+            completed,
+        }
+    }
+
     pub fn todo_id(&self) -> &TodoId {
         &self.todo_id
     }
