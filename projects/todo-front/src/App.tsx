@@ -11,7 +11,7 @@ const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([])
 
   const onSubmit = async (payload: CreateTodoPayload) => {
-    if (!payload.text.value) return
+    if (!payload.text) return
     await createTodo(payload)
     const todos = await getAllTodo()
     setTodos(todos)

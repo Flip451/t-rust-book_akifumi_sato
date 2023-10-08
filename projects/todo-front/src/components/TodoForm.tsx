@@ -12,9 +12,7 @@ const TodoForm: FC<Props> = ({ onSubmit }) => {
     const addTodoHandler = async () => {
         if (!editText) return
         onSubmit({
-            text: {
-                value: editText
-            },
+            text: editText,
         })
         setEditText('')
     }

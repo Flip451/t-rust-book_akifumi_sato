@@ -6,12 +6,13 @@ use axum::{
     Json,
 };
 use hyper::StatusCode;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     application::todos::{
         todo_application_error::TodoApplicationError,
         todo_create_application_service::{ITodoCreateApplicationService, TodoCreateCommand},
+        todo_data::TodoData,
         todo_delete_application_service::{ITodoDeleteApplicationService, TodoDeleteCommand},
         todo_get_all_aplication_service::{ITodoGetAllApplicationService, TodoGetAllCommand},
         todo_get_application_service::{ITodoGetApplicationService, TodoGetCommand},
@@ -22,20 +23,37 @@ use crate::{
 
 #[derive(Deserialize)]
 pub struct TodoCreatePayload {
-    todo_text: String,
+    text: String,
 }
 
 impl TodoCreatePayload {
     fn into_command(self) -> TodoCreateCommand {
         TodoCreateCommand {
-            todo_text: self.todo_text,
+            todo_text: self.text,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct TodoResponse {
+    id: String,
+    text: String,
+    completed: bool,
+}
+
+impl TodoResponse {
+    fn new(todo_data: TodoData) -> Self {
+        Self {
+            id: todo_data.todo_id.to_string(),
+            text: todo_data.todo_text,
+            completed: todo_data.completed,
         }
     }
 }
 
 #[derive(Deserialize)]
 pub struct TodoUpdatePayload {
-    todo_text: Option<String>,
+    text: Option<String>,
     completed: Option<bool>,
 }
 
@@ -43,8 +61,8 @@ impl TodoUpdatePayload {
     fn into_command(self, id: String) -> TodoUpdateCommand {
         TodoUpdateCommand {
             todo_id: id,
-            todo_text: self.todo_text,
-            completed: self.completed
+            todo_text: self.text,
+            completed: self.completed,
         }
     }
 }
@@ -63,7 +81,7 @@ where
         .handle(payload.into_command())
         .await
     {
-        Ok(todo_data) => Ok((StatusCode::CREATED, Json(todo_data))),
+        Ok(todo_data) => Ok((StatusCode::CREATED, Json(TodoResponse::new(todo_data)))),
         Err(e @ TodoApplicationError::DuplicatedTodo(_)) => {
             Err((StatusCode::BAD_REQUEST, e.to_string()))
         }
@@ -96,7 +114,7 @@ where
         .handle(TodoGetCommand { todo_id: id })
         .await
     {
-        Ok(todo_data) => Ok((StatusCode::OK, Json(todo_data))),
+        Ok(todo_data) => Ok((StatusCode::OK, Json(TodoResponse::new(todo_data)))),
         Err(e @ TodoApplicationError::DuplicatedTodo(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
@@ -128,7 +146,15 @@ where
         .handle(TodoGetAllCommand {})
         .await
     {
-        Ok(todo_data) => Ok((StatusCode::OK, Json(todo_data))),
+        Ok(todo_data) => Ok((
+            StatusCode::OK,
+            Json(
+                todo_data
+                    .into_iter()
+                    .map(|todo_data| TodoResponse::new(todo_data))
+                    .collect::<Vec<TodoResponse>>(),
+            ),
+        )),
         Err(e @ TodoApplicationError::DuplicatedTodo(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
@@ -162,7 +188,7 @@ where
         .handle(payload.into_command(id))
         .await
     {
-        Ok(todo_data) => Ok((StatusCode::OK, Json(todo_data))),
+        Ok(todo_data) => Ok((StatusCode::OK, Json(TodoResponse::new(todo_data)))),
         Err(e @ TodoApplicationError::DuplicatedTodo(_)) => {
             Err((StatusCode::BAD_REQUEST, e.to_string()))
         }
