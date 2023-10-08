@@ -6,12 +6,13 @@ use axum::{
     Json,
 };
 use hyper::StatusCode;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     application::users::{
         user_application_error::UserApplicationError,
         user_create_application_service::{IUserCreateApplicationService, UserCreateCommand},
+        user_data::UserData,
         user_delete_application_service::{IUserDeleteApplicationService, UserDeleteCommand},
         user_get_all_aplication_service::{IUserGetAllApplicationService, UserGetAllCommand},
         user_get_application_service::{IUserGetApplicationService, UserGetCommand},
@@ -19,6 +20,21 @@ use crate::{
     },
     infra::repository::users::IUserRepository,
 };
+
+#[derive(Serialize)]
+pub struct UserResponse {
+    id: String,
+    name: String,
+}
+
+impl UserResponse {
+    fn new(user_data: UserData) -> Self {
+        Self {
+            id: user_data.user_id.to_string(),
+            name: user_data.user_name,
+        }
+    }
+}
 
 #[derive(Deserialize)]
 pub struct UserCreatePayload {
@@ -61,7 +77,7 @@ where
         .handle(payload.into_command())
         .await
     {
-        Ok(user_data) => Ok((StatusCode::CREATED, Json(user_data))),
+        Ok(user_data) => Ok((StatusCode::CREATED, Json(UserResponse::new(user_data)))),
         Err(e @ UserApplicationError::DuplicatedUser(_)) => {
             Err((StatusCode::BAD_REQUEST, e.to_string()))
         }
@@ -94,7 +110,7 @@ where
         .handle(UserGetCommand { user_id: id })
         .await
     {
-        Ok(user_data) => Ok((StatusCode::OK, Json(user_data))),
+        Ok(user_data) => Ok((StatusCode::OK, Json(UserResponse::new(user_data)))),
         Err(e @ UserApplicationError::DuplicatedUser(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
@@ -126,7 +142,15 @@ where
         .handle(UserGetAllCommand {})
         .await
     {
-        Ok(user_data) => Ok((StatusCode::OK, Json(user_data))),
+        Ok(user_data) => Ok((
+            StatusCode::OK,
+            Json(
+                user_data
+                    .into_iter()
+                    .map(|user_data| UserResponse::new(user_data))
+                    .collect::<Vec<UserResponse>>(),
+            ),
+        )),
         Err(e @ UserApplicationError::DuplicatedUser(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
@@ -160,7 +184,7 @@ where
         .handle(payload.into_command(id))
         .await
     {
-        Ok(user_data) => Ok((StatusCode::OK, Json(user_data))),
+        Ok(user_data) => Ok((StatusCode::OK, Json(UserResponse::new(user_data)))),
         Err(e @ UserApplicationError::DuplicatedUser(_)) => {
             Err((StatusCode::BAD_REQUEST, e.to_string()))
         }
