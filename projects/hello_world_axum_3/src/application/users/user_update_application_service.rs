@@ -56,7 +56,7 @@ impl<T: IUserRepository> IUserUpdateApplicationService<T> for UserUpdateApplicat
             .user_repository
             .find(&user_id)
             .await
-            .or(Err(UserApplicationError::Unexpected))?
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?
             .ok_or(UserApplicationError::UserNotFound(user_id))?;
 
         if let Some(user_name_string) = user_name_string {
@@ -69,7 +69,7 @@ impl<T: IUserRepository> IUserUpdateApplicationService<T> for UserUpdateApplicat
             .user_service
             .is_duplicated(&user)
             .await
-            .or(Err(UserApplicationError::Unexpected))?
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?
         {
             return Err(UserApplicationError::DuplicatedUser(user).into());
         }
@@ -77,8 +77,49 @@ impl<T: IUserRepository> IUserUpdateApplicationService<T> for UserUpdateApplicat
         self.user_repository
             .save(&user)
             .await
-            .or(Err(UserApplicationError::Unexpected))?;
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?;
 
         Ok(UserData::new(user))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+
+    use super::*;
+    #[tokio::test]
+    async fn should_update_user_with_min_length_user_name() -> Result<()> {
+        Ok(todo!())
+    }
+
+    #[tokio::test]
+    async fn should_update_user_with_max_length_user_name() -> Result<()> {
+        Ok(todo!())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_name_is_too_short() -> Result<()> {
+        Ok(todo!())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_name_is_too_long() -> Result<()> {
+        Ok(todo!())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_is_duplicated() -> Result<()> {
+        Ok(todo!())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_target_user_does_not_exist() -> Result<()> {
+        Ok(todo!())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_id_has_incorrect_format() -> Result<()> {
+        Ok(todo!())
     }
 }

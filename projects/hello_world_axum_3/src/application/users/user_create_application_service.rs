@@ -48,13 +48,13 @@ impl<T: IUserRepository> IUserCreateApplicationService<T> for UserCreateApplicat
         } = command;
         let user_name = UserName::new(user_name_string)
             .map_err(|e| UserApplicationError::IllegalArgumentError(e.to_string()))?;
-        let new_user = User::new(user_name).or(Err(UserApplicationError::Unexpected))?;
+        let new_user = User::new(user_name).map_err(|e| UserApplicationError::Unexpected(e.to_string()))?;
 
         if self
             .user_service
             .is_duplicated(&new_user)
             .await
-            .or(Err(UserApplicationError::Unexpected))?
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?
         {
             return Err(UserApplicationError::DuplicatedUser(new_user).into());
         }
@@ -62,7 +62,7 @@ impl<T: IUserRepository> IUserCreateApplicationService<T> for UserCreateApplicat
         self.user_repository
             .save(&new_user)
             .await
-            .or(Err(UserApplicationError::Unexpected))?;
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?;
 
         Ok(UserData::new(new_user))
     }
@@ -95,7 +95,7 @@ mod tests {
 
         // get user saved in store
         let store = repository.read_store_ref();
-        let stored_user = store.get(&UserId::new(user_data.user_id).unwrap()).unwrap();
+        let stored_user = store.get(&UserId::new(user_data.user_id)?).unwrap();
 
         assert_eq!("123", stored_user.user_name.value());
         Ok(())
@@ -116,7 +116,7 @@ mod tests {
 
         // get user saved in store
         let store = repository.read_store_ref();
-        let stored_user = store.get(&UserId::new(user_data.user_id).unwrap()).unwrap();
+        let stored_user = store.get(&UserId::new(user_data.user_id)?).unwrap();
 
         assert_eq!("1234567890123456789", stored_user.user_name.value());
         Ok(())

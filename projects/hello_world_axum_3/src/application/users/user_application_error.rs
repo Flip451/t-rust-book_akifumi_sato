@@ -13,8 +13,8 @@ pub enum UserApplicationError {
     IllegalArgumentError(String),
     #[error("Given user id has incorrect format: [{0}]")]
     IllegalUserId(String),
-    #[error("Unexpected error")]
-    Unexpected,
+    #[error("Unexpected error: [{0}]")]
+    Unexpected(String),
 }
 
 // <https://github.com/serde-rs/serde/issues/2268#issuecomment-1238962452> を参考に実装

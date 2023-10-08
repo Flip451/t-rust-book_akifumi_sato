@@ -37,10 +37,32 @@ impl<T: IUserRepository> IUserGetApplicationService<T> for UserGetApplicationSer
             .user_repository
             .find(&user_id)
             .await
-            .or(Err(UserApplicationError::Unexpected))?;
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?;
         match user_found {
             Some(user) => Ok(UserData::new(user)),
             None => Err(UserApplicationError::UserNotFound(user_id).into()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn should_get_user() -> Result<()> {
+        Ok(todo!())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_target_user_does_not_exist() -> Result<()> {
+        Ok(todo!())
+    }
+
+    #[tokio::test]
+    async fn should_throw_error_if_user_id_has_incorrect_format() -> Result<()> {
+        Ok(todo!())
     }
 }

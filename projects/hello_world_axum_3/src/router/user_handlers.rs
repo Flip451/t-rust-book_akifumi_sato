@@ -74,7 +74,7 @@ where
         Err(e @ UserApplicationError::UserNotFound(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
-        Err(e @ UserApplicationError::Unexpected) => {
+        Err(e @ UserApplicationError::Unexpected(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
     }
@@ -107,7 +107,7 @@ where
         Err(e @ UserApplicationError::UserNotFound(_)) => {
             Err((StatusCode::NOT_FOUND, e.to_string()))
         }
-        Err(e @ UserApplicationError::Unexpected) => {
+        Err(e @ UserApplicationError::Unexpected(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
     }
@@ -139,7 +139,7 @@ where
         Err(e @ UserApplicationError::UserNotFound(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
-        Err(e @ UserApplicationError::Unexpected) => {
+        Err(e @ UserApplicationError::Unexpected(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
     }
@@ -173,7 +173,7 @@ where
         Err(e @ UserApplicationError::UserNotFound(_)) => {
             Err((StatusCode::NOT_FOUND, e.to_string()))
         }
-        Err(e @ UserApplicationError::Unexpected) => {
+        Err(e @ UserApplicationError::Unexpected(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
     }
@@ -206,7 +206,7 @@ where
         Err(e @ UserApplicationError::UserNotFound(_)) => {
             Err((StatusCode::NOT_FOUND, e.to_string()))
         }
-        Err(e @ UserApplicationError::Unexpected) => {
+        Err(e @ UserApplicationError::Unexpected(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
     }

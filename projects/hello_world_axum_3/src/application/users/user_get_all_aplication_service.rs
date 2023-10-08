@@ -30,10 +30,22 @@ impl<T: IUserRepository> IUserGetAllApplicationService<T> for UserGetAllApplicat
             .user_repository
             .find_all()
             .await
-            .or(Err(UserApplicationError::Unexpected))?;
+            .map_err(|e| UserApplicationError::Unexpected(e.to_string()))?;
         Ok(users_found
             .into_iter()
             .map(|user| UserData::new(user))
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn should_get_all_users() -> Result<()> {
+        Ok(todo!())
     }
 }
