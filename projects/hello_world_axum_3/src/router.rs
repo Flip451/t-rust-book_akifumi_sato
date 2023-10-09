@@ -1,3 +1,4 @@
+mod label_handlers;
 mod root_handlers;
 mod todo_handlers;
 mod user_handlers;
@@ -11,6 +12,7 @@ use tower_http::cors::{Any, CorsLayer};
 
 #[cfg(test)]
 use crate::infra::repository_impl::in_memory::{
+    labels::in_memory_label_repository::InMemoryLabelRepository,
     todos::in_memory_todo_repository::InMemoryTodoRepository,
     users::in_memory_user_repository::InMemoryUserRepository,
 };
@@ -29,73 +31,83 @@ use crate::{
             user_get_all_aplication_service::UserGetAllApplicationService,
             user_get_application_service::UserGetApplicationService,
             user_update_application_service::UserUpdateApplicationService,
-        },
+        }, labels::{label_get_all_aplication_service::LabelGetAllApplicationService, label_create_application_service::LabelCreateApplicationService, label_get_application_service::LabelGetApplicationService, label_update_application_service::LabelUpdateApplicationService, label_delete_application_service::LabelDeleteApplicationService},
     },
     infra::{
-        repository::{todos::ITodoRepository, users::IUserRepository},
+        repository::{todos::ITodoRepository, users::IUserRepository, labels::ILabelRepository},
         repository_impl::pg::{
             pg_todo_repository::PgTodoRepository,
-            pg_user_repository::PgUserRepository,
+            pg_user_repository::PgUserRepository, pg_label_repository::PgLabelRepository,
         },
     },
 };
 
-pub struct ArgCreateApp<TodoRep, UserRep>
+pub struct ArgCreateApp<LabelRep, TodoRep, UserRep>
 where
+    LabelRep: ILabelRepository,
     UserRep: IUserRepository,
     TodoRep: ITodoRepository,
 {
+    label_repository: LabelRep,
     todo_repository: TodoRep,
     user_repository: UserRep,
 }
 
 #[cfg(test)]
-impl ArgCreateApp<InMemoryTodoRepository, InMemoryUserRepository> {
+impl ArgCreateApp<InMemoryLabelRepository, InMemoryTodoRepository, InMemoryUserRepository> {
     pub fn new() -> Self {
+        let label_repository = InMemoryLabelRepository::new();
         let todo_repository = InMemoryTodoRepository::new();
         let user_repository = InMemoryUserRepository::new();
         Self {
+            label_repository,
             todo_repository,
             user_repository,
         }
     }
 }
 
-impl ArgCreateApp<PgTodoRepository, PgUserRepository> {
+impl ArgCreateApp<PgLabelRepository, PgTodoRepository, PgUserRepository> {
     pub fn new(pg_pool: PgPool) -> Self {
+        let label_repository = PgLabelRepository::new(pg_pool.clone());
         let todo_repository = PgTodoRepository::new(pg_pool.clone());
         let user_repository = PgUserRepository::new(pg_pool);
         Self {
+            label_repository,
             todo_repository,
             user_repository,
         }
     }
 }
 
-pub fn create_app<TodoRep, UserRep>(
+pub fn create_app<LabelRep, TodoRep, UserRep>(
     ArgCreateApp {
+        label_repository,
         todo_repository,
         user_repository,
-    }: ArgCreateApp<TodoRep, UserRep>,
+    }: ArgCreateApp<LabelRep, TodoRep, UserRep>,
 ) -> Router
 where
+    LabelRep: ILabelRepository,
     UserRep: IUserRepository,
     TodoRep: ITodoRepository,
 {
     Router::new()
         .route("/", get(root_handlers::index))
+        // labels
         .route(
-            "/users",
-            get(user_handlers::get_all::<UserRep, UserGetAllApplicationService<UserRep>>)
-                .post(user_handlers::create::<UserRep, UserCreateApplicationService<UserRep>>),
+            "/labels",
+            get(label_handlers::get_all::<LabelRep, LabelGetAllApplicationService<LabelRep>>)
+                .post(label_handlers::create::<LabelRep, LabelCreateApplicationService<LabelRep>>),
         )
         .route(
-            "/users/:id",
-            get(user_handlers::get::<UserRep, UserGetApplicationService<UserRep>>)
-                .patch(user_handlers::update::<UserRep, UserUpdateApplicationService<UserRep>>)
-                .delete(user_handlers::delete::<UserRep, UserDeleteApplicationService<UserRep>>),
+            "/labels/:id",
+            get(label_handlers::get::<LabelRep, LabelGetApplicationService<LabelRep>>)
+                .patch(label_handlers::update::<LabelRep, LabelUpdateApplicationService<LabelRep>>)
+                .delete(label_handlers::delete::<LabelRep, LabelDeleteApplicationService<LabelRep>>),
         )
-        .layer(Extension(Arc::new(user_repository)))
+        .layer(Extension(Arc::new(label_repository)))
+        // todos
         .route(
             "/todos",
             get(todo_handlers::get_all::<TodoRep, TodoGetAllApplicationService<TodoRep>>)
@@ -108,6 +120,20 @@ where
                 .delete(todo_handlers::delete::<TodoRep, TodoDeleteApplicationService<TodoRep>>),
         )
         .layer(Extension(Arc::new(todo_repository)))
+        // users
+        .route(
+            "/users",
+            get(user_handlers::get_all::<UserRep, UserGetAllApplicationService<UserRep>>)
+                .post(user_handlers::create::<UserRep, UserCreateApplicationService<UserRep>>),
+        )
+        .route(
+            "/users/:id",
+            get(user_handlers::get::<UserRep, UserGetApplicationService<UserRep>>)
+                .patch(user_handlers::update::<UserRep, UserUpdateApplicationService<UserRep>>)
+                .delete(user_handlers::delete::<UserRep, UserDeleteApplicationService<UserRep>>),
+        )
+        .layer(Extension(Arc::new(user_repository)))
+        // CORS
         .layer(
             CorsLayer::new()
                 .allow_origin("http://127.0.0.1:3001".parse::<HeaderValue>().unwrap())
