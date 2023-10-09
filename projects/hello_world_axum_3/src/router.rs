@@ -1,3 +1,4 @@
+mod label_handlers;
 mod root_handlers;
 mod todo_handlers;
 mod user_handlers;
