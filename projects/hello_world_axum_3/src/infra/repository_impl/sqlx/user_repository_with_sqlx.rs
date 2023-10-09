@@ -27,18 +27,18 @@ impl UserFromRow {
 }
 
 #[derive(Clone)]
-pub struct UserRepositoryWithSqlx {
+pub struct PgUserRepository {
     pool: PgPool,
 }
 
-impl UserRepositoryWithSqlx {
+impl PgUserRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl IUserRepository for UserRepositoryWithSqlx {
+impl IUserRepository for PgUserRepository {
     async fn save(&self, user: &User) -> Result<()> {
         let sql = r#"
 insert into users (id, name)
@@ -116,7 +116,7 @@ mod tests {
     #[tokio::test]
     async fn user_crud_senario() -> Result<()> {
         let pool = pg_pool::connect_to_test_pg_pool().await;
-        let repository = UserRepositoryWithSqlx::new(pool.clone());
+        let repository = PgUserRepository::new(pool.clone());
 
         let name = UserName::new("user name".to_string())?;
         let new_user = User::new(name)?;

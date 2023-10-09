@@ -34,8 +34,8 @@ use crate::{
     infra::{
         repository::{todos::ITodoRepository, users::IUserRepository},
         repository_impl::sqlx::{
-            todo_repository_with_sqlx::TodoRepositoryWithSqlx,
-            user_repository_with_sqlx::UserRepositoryWithSqlx,
+            todo_repository_with_sqlx::PgTodoRepository,
+            user_repository_with_sqlx::PgUserRepository,
         },
     },
 };
@@ -61,10 +61,10 @@ impl ArgCreateApp<InMemoryTodoRepository, InMemoryUserRepository> {
     }
 }
 
-impl ArgCreateApp<TodoRepositoryWithSqlx, UserRepositoryWithSqlx> {
+impl ArgCreateApp<PgTodoRepository, PgUserRepository> {
     pub fn new(pg_pool: PgPool) -> Self {
-        let todo_repository = TodoRepositoryWithSqlx::new(pg_pool.clone());
-        let user_repository = UserRepositoryWithSqlx::new(pg_pool);
+        let todo_repository = PgTodoRepository::new(pg_pool.clone());
+        let user_repository = PgUserRepository::new(pg_pool);
         Self {
             todo_repository,
             user_repository,
