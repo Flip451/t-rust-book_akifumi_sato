@@ -107,7 +107,7 @@ mod tests {
 
     #[tokio::test]
     async fn todo_crud_senario() -> Result<()> {
-        let pool = pg_pool::connect_to_pg_pool().await;
+        let pool = pg_pool::connect_to_test_pg_pool().await;
         let repository = TodoRepositoryWithSqlx::new(pool.clone());
 
         let text = TodoText::new("todo text".to_string())?;

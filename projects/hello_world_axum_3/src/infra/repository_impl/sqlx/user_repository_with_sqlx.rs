@@ -115,7 +115,7 @@ mod tests {
 
     #[tokio::test]
     async fn user_crud_senario() -> Result<()> {
-        let pool = pg_pool::connect_to_pg_pool().await;
+        let pool = pg_pool::connect_to_test_pg_pool().await;
         let repository = UserRepositoryWithSqlx::new(pool.clone());
 
         let name = UserName::new("user name".to_string())?;
