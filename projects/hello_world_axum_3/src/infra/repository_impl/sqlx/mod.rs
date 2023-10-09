@@ -1,2 +1,0 @@
-pub mod user_repository_with_sqlx;
-pub mod todo_repository_with_sqlx;

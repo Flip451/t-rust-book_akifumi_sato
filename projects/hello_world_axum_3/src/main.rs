@@ -3,9 +3,9 @@ use std::net::SocketAddr;
 use anyhow::Result;
 
 use hello_world_axum_3::{
-    infra::repository_impl::sqlx::{
-        todo_repository_with_sqlx::PgTodoRepository,
-        user_repository_with_sqlx::PgUserRepository,
+    infra::repository_impl::pg::{
+        pg_todo_repository::PgTodoRepository,
+        pg_user_repository::PgUserRepository,
     },
     log::init_log,
     pg_pool,

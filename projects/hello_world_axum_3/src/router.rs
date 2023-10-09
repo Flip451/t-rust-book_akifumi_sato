@@ -33,9 +33,9 @@ use crate::{
     },
     infra::{
         repository::{todos::ITodoRepository, users::IUserRepository},
-        repository_impl::sqlx::{
-            todo_repository_with_sqlx::PgTodoRepository,
-            user_repository_with_sqlx::PgUserRepository,
+        repository_impl::pg::{
+            pg_todo_repository::PgTodoRepository,
+            pg_user_repository::PgUserRepository,
         },
     },
 };
