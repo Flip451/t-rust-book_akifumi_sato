@@ -7,7 +7,7 @@ use super::label_id::LabelId;
 use super::label_name::LabelName;
 
 // entity
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct Label {
     label_id: LabelId,
     pub label_name: LabelName,

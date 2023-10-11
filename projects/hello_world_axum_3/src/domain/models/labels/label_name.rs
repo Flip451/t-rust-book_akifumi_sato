@@ -3,7 +3,7 @@ use thiserror::Error;
 pub use crate::domain::value_object::ValueObject;
 
 // value object
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LabelName {
     value: String,
 }

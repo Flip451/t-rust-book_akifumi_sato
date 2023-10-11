@@ -41,6 +41,8 @@ impl<T: ITodoRepository> ITodoGetAllApplicationService<T> for TodoGetAllApplicat
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use anyhow::Result;
 
     use crate::{
@@ -66,7 +68,7 @@ mod tests {
         assert!(todos.is_empty());
 
         // 2. Put the first data
-        let todo_1 = Todo::new(TodoText::new("test-1".to_string())?)?;
+        let todo_1 = Todo::new(TodoText::new("test-1".to_string())?, HashSet::new())?;
         let todo_id = todo_1.todo_id().clone();
         {
             let mut store = repository.write_store_ref();
@@ -80,7 +82,7 @@ mod tests {
         assert_eq!(vec![TodoData::new(todo_1.clone())], todos);
 
         // 4. Put the second data
-        let todo_2 = Todo::new(TodoText::new("test-2".to_string())?)?;
+        let todo_2 = Todo::new(TodoText::new("test-2".to_string())?, HashSet::new())?;
         let todo_id = todo_2.todo_id().clone();
         {
             let mut store = repository.write_store_ref();

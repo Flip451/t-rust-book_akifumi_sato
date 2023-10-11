@@ -64,7 +64,7 @@ impl<T: ITodoRepository> ITodoDeleteApplicationService<T> for TodoDeleteApplicat
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::{sync::Arc, collections::HashSet};
 
     use anyhow::Result;
     use uuid::Uuid;
@@ -82,7 +82,7 @@ mod tests {
     async fn should_delete_todo() -> Result<()> {
         let repository = Arc::new(InMemoryTodoRepository::new());
 
-        let todo = Todo::new(TodoText::new("test-1".to_string())?)?;
+        let todo = Todo::new(TodoText::new("test-1".to_string())?, HashSet::new())?;
         let todo_id = todo.todo_id().clone();
 
         // Create todo in store

@@ -121,13 +121,24 @@ where
         // todos
         .route(
             "/todos",
-            get(todo_handlers::get_all::<TodoRep, TodoGetAllApplicationService<TodoRep>>)
-                .post(todo_handlers::create::<TodoRep, TodoCreateApplicationService<TodoRep>>),
+            get(todo_handlers::get_all::<TodoRep, TodoGetAllApplicationService<TodoRep>>).post(
+                todo_handlers::create::<
+                    TodoRep,
+                    LabelRep,
+                    TodoCreateApplicationService<TodoRep, LabelRep>,
+                >,
+            ),
         )
         .route(
             "/todos/:id",
             get(todo_handlers::get::<TodoRep, TodoGetApplicationService<TodoRep>>)
-                .patch(todo_handlers::update::<TodoRep, TodoUpdateApplicationService<TodoRep>>)
+                .patch(
+                    todo_handlers::update::<
+                        TodoRep,
+                        LabelRep,
+                        TodoUpdateApplicationService<TodoRep, LabelRep>,
+                    >,
+                )
                 .delete(todo_handlers::delete::<TodoRep, TodoDeleteApplicationService<TodoRep>>),
         )
         .layer(Extension(Arc::new(todo_repository)))

@@ -18,18 +18,22 @@ use crate::{
         todo_get_application_service::{ITodoGetApplicationService, TodoGetCommand},
         todo_update_application_service::{ITodoUpdateApplicationService, TodoUpdateCommand},
     },
-    domain::models::todos::todo_repository::ITodoRepository,
+    domain::models::{
+        labels::label_repository::ILabelRepository, todos::todo_repository::ITodoRepository,
+    },
 };
 
 #[derive(Deserialize)]
 pub struct TodoCreatePayload {
     text: String,
+    label_ids: Vec<String>,
 }
 
 impl TodoCreatePayload {
     fn into_command(self) -> TodoCreateCommand {
         TodoCreateCommand {
             todo_text: self.text,
+            label_ids: self.label_ids,
         }
     }
 }
@@ -55,6 +59,7 @@ impl TodoResponse {
 pub struct TodoUpdatePayload {
     text: Option<String>,
     completed: Option<bool>,
+    label_ids: Option<Vec<String>>,
 }
 
 impl TodoUpdatePayload {
@@ -63,19 +68,21 @@ impl TodoUpdatePayload {
             todo_id: id,
             todo_text: self.text,
             completed: self.completed,
+            label_ids: self.label_ids,
         }
     }
 }
 
-pub async fn create<Rep, AS>(
-    Extension(repository): Extension<Arc<Rep>>,
+pub async fn create<TodoRep, LabelRep, AS>(
+    Extension((todo_repository, label_repository)): Extension<(Arc<TodoRep>, Arc<LabelRep>)>,
     Json(payload): Json<TodoCreatePayload>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
 where
-    Rep: ITodoRepository,
-    AS: ITodoCreateApplicationService<Rep>,
+    TodoRep: ITodoRepository,
+    LabelRep: ILabelRepository,
+    AS: ITodoCreateApplicationService<TodoRep, LabelRep>,
 {
-    let todo_create_application_service = AS::new(repository);
+    let todo_create_application_service = AS::new(todo_repository, label_repository);
 
     match todo_create_application_service
         .handle(payload.into_command())
@@ -97,18 +104,24 @@ where
         Err(e @ TodoApplicationError::Unexpected(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
+        Err(e @ TodoApplicationError::LabelNotFound(_)) => {
+            Err((StatusCode::BAD_REQUEST, e.to_string()))
+        }
+        Err(e @ TodoApplicationError::IllegalLabelId(_)) => {
+            Err((StatusCode::BAD_REQUEST, e.to_string()))
+        }
     }
 }
 
-pub async fn get<Rep, AS>(
-    Extension(repository): Extension<Arc<Rep>>,
+pub async fn get<TodoRep, AS>(
+    Extension(todo_repository): Extension<Arc<TodoRep>>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
 where
-    Rep: ITodoRepository,
-    AS: ITodoGetApplicationService<Rep>,
+    TodoRep: ITodoRepository,
+    AS: ITodoGetApplicationService<TodoRep>,
 {
-    let todo_get_application_service = AS::new(repository);
+    let todo_get_application_service = AS::new(todo_repository);
 
     match todo_get_application_service
         .handle(TodoGetCommand { todo_id: id })
@@ -128,6 +141,12 @@ where
             Err((StatusCode::NOT_FOUND, e.to_string()))
         }
         Err(e @ TodoApplicationError::Unexpected(_)) => {
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
+        Err(e @ TodoApplicationError::LabelNotFound(_)) => {
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
+        Err(e @ TodoApplicationError::IllegalLabelId(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
     }
@@ -170,19 +189,26 @@ where
         Err(e @ TodoApplicationError::Unexpected(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
+        Err(e @ TodoApplicationError::LabelNotFound(_)) => {
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
+        Err(e @ TodoApplicationError::IllegalLabelId(_)) => {
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
     }
 }
 
-pub async fn update<Rep, AS>(
-    Extension(repository): Extension<Arc<Rep>>,
+pub async fn update<TodoRep, LabelRep, AS>(
+    Extension((todo_repository, label_repository)): Extension<(Arc<TodoRep>, Arc<LabelRep>)>,
     Path(id): Path<String>,
     Json(payload): Json<TodoUpdatePayload>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
 where
-    Rep: ITodoRepository,
-    AS: ITodoUpdateApplicationService<Rep>,
+    TodoRep: ITodoRepository,
+    LabelRep: ILabelRepository,
+    AS: ITodoUpdateApplicationService<TodoRep, LabelRep>,
 {
-    let todo_update_application_service = AS::new(repository);
+    let todo_update_application_service = AS::new(todo_repository, label_repository);
 
     match todo_update_application_service
         .handle(payload.into_command(id))
@@ -203,6 +229,12 @@ where
         }
         Err(e @ TodoApplicationError::Unexpected(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
+        Err(e @ TodoApplicationError::LabelNotFound(_)) => {
+            Err((StatusCode::BAD_REQUEST, e.to_string()))
+        }
+        Err(e @ TodoApplicationError::IllegalLabelId(_)) => {
+            Err((StatusCode::BAD_REQUEST, e.to_string()))
         }
     }
 }
@@ -235,6 +267,12 @@ where
             Err((StatusCode::NOT_FOUND, e.to_string()))
         }
         Err(e @ TodoApplicationError::Unexpected(_)) => {
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
+        Err(e @ TodoApplicationError::LabelNotFound(_)) => {
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
+        Err(e @ TodoApplicationError::IllegalLabelId(_)) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
     }
