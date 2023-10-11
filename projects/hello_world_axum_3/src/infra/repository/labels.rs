@@ -1,10 +1,9 @@
-use anyhow::Result as AnyhowResult;
 use axum::async_trait;
 use thiserror::Error;
 
 use crate::domain::models::labels::*;
 
-pub type Result<T> = AnyhowResult<T, LabelRepositoryError>;
+pub type Result<T> = anyhow::Result<T, LabelRepositoryError>;
 
 #[async_trait]
 pub trait ILabelRepository: Clone + Send + Sync + 'static {

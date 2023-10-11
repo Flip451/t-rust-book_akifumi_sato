@@ -1,6 +1,9 @@
+use std::fmt::Display;
+
+use thiserror::Error;
 use uuid::Uuid;
 
-pub use crate::domain::value_object::{Result, ValueObject};
+pub use crate::domain::value_object::ValueObject;
 
 // value object
 #[derive(Debug, Eq, Hash, PartialEq, Clone)]
@@ -8,10 +11,17 @@ pub struct LabelId {
     value: Uuid,
 }
 
+#[derive(Debug, Error)]
+pub enum LabelIdError {
+    #[error("Failure to parse string as label_id: [{0}]")]
+    FailToParse(String),
+}
+
 impl ValueObject for LabelId {
     type Value = Uuid;
+    type Error = LabelIdError;
 
-    fn new(value: Uuid) -> Result<Self> {
+    fn new(value: Uuid) -> Result<Self, LabelIdError> {
         Ok(Self { value })
     }
 
@@ -25,9 +35,15 @@ impl ValueObject for LabelId {
 }
 
 impl LabelId {
-    pub fn parse(s: String) -> Result<Self> {
+    pub fn parse(s: String) -> Result<Self, LabelIdError> {
         Ok(Self {
-            value: Uuid::try_parse(&s)?,
+            value: Uuid::try_parse(&s).map_err(|e| LabelIdError::FailToParse(e.to_string()))?,
         })
+    }
+}
+
+impl Display for LabelId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
     }
 }

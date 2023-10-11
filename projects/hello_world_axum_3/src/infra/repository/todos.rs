@@ -1,10 +1,9 @@
-use anyhow::Result as AnyhowResult;
 use axum::async_trait;
 use thiserror::Error;
 
 use crate::domain::models::todos::*;
 
-pub type Result<T> = AnyhowResult<T, TodoRepositoryError>;
+pub type Result<T> = anyhow::Result<T, TodoRepositoryError>;
 
 #[async_trait]
 pub trait ITodoRepository: Clone + Send + Sync + 'static {

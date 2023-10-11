@@ -5,9 +5,11 @@ use std::{
 
 use axum::async_trait;
 
-use crate::{
-    domain::models::users::{User, UserId, UserName},
-    infra::repository::users::{IUserRepository, Result, UserRepositoryError},
+use crate::domain::models::users::{
+    user::User,
+    user_id::UserId,
+    user_name::UserName,
+    user_repository::{IUserRepository, Result, UserRepositoryError},
 };
 
 type TodoStore = HashMap<UserId, User>;

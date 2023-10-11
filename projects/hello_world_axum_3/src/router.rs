@@ -18,6 +18,13 @@ use crate::infra::repository_impl::in_memory::{
 };
 use crate::{
     application::{
+        labels::{
+            label_create_application_service::LabelCreateApplicationService,
+            label_delete_application_service::LabelDeleteApplicationService,
+            label_get_all_aplication_service::LabelGetAllApplicationService,
+            label_get_application_service::LabelGetApplicationService,
+            label_update_application_service::LabelUpdateApplicationService,
+        },
         todos::{
             todo_create_application_service::TodoCreateApplicationService,
             todo_delete_application_service::TodoDeleteApplicationService,
@@ -31,13 +38,14 @@ use crate::{
             user_get_all_aplication_service::UserGetAllApplicationService,
             user_get_application_service::UserGetApplicationService,
             user_update_application_service::UserUpdateApplicationService,
-        }, labels::{label_get_all_aplication_service::LabelGetAllApplicationService, label_create_application_service::LabelCreateApplicationService, label_get_application_service::LabelGetApplicationService, label_update_application_service::LabelUpdateApplicationService, label_delete_application_service::LabelDeleteApplicationService},
+        },
     },
+    domain::models::users::user_repository::IUserRepository,
     infra::{
-        repository::{todos::ITodoRepository, users::IUserRepository, labels::ILabelRepository},
+        repository::{labels::ILabelRepository, todos::ITodoRepository},
         repository_impl::pg::{
-            pg_todo_repository::PgTodoRepository,
-            pg_user_repository::PgUserRepository, pg_label_repository::PgLabelRepository,
+            pg_label_repository::PgLabelRepository, pg_todo_repository::PgTodoRepository,
+            pg_user_repository::PgUserRepository,
         },
     },
 };
@@ -104,7 +112,9 @@ where
             "/labels/:id",
             get(label_handlers::get::<LabelRep, LabelGetApplicationService<LabelRep>>)
                 .patch(label_handlers::update::<LabelRep, LabelUpdateApplicationService<LabelRep>>)
-                .delete(label_handlers::delete::<LabelRep, LabelDeleteApplicationService<LabelRep>>),
+                .delete(
+                    label_handlers::delete::<LabelRep, LabelDeleteApplicationService<LabelRep>>,
+                ),
         )
         .layer(Extension(Arc::new(label_repository)))
         // todos

@@ -4,9 +4,9 @@ use axum::async_trait;
 
 use super::Result;
 
-use crate::{
-    domain::models::users::UserId,
-    infra::repository::users::{IUserRepository, UserRepositoryError},
+use crate::domain::models::users::{
+    user_id::UserId,
+    user_repository::{IUserRepository, UserRepositoryError},
 };
 
 use super::user_application_error::UserApplicationError;
@@ -71,10 +71,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        domain::{
-            models::users::{User, UserName},
-            value_object::ValueObject,
-        },
+        domain::{models::users::{user::User, user_name::UserName}, value_object::ValueObject},
         infra::repository_impl::in_memory::users::in_memory_user_repository::InMemoryUserRepository,
     };
 

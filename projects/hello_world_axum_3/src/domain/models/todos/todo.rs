@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::domain::entity::Entity;
-use crate::domain::value_object::{Result, ValueObject};
+use crate::domain::value_object::ValueObject;
 
 use super::todo_id::TodoId;
 use super::todo_text::TodoText;
@@ -15,7 +15,7 @@ pub struct Todo {
 }
 
 impl Todo {
-    pub fn new(todo_text: TodoText) -> Result<Self> {
+    pub fn new(todo_text: TodoText) -> anyhow::Result<Self> {
         let todo_id = TodoId::new(Uuid::new_v4())?;
         Ok(Self {
             todo_id,

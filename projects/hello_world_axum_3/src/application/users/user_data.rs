@@ -1,7 +1,7 @@
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::domain::{models::users::User, value_object::ValueObject};
+use crate::domain::{models::users::user::User, value_object::ValueObject};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct UserData {

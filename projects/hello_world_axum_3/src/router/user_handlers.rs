@@ -18,7 +18,7 @@ use crate::{
         user_get_application_service::{IUserGetApplicationService, UserGetCommand},
         user_update_application_service::{IUserUpdateApplicationService, UserUpdateCommand},
     },
-    infra::repository::users::IUserRepository,
+    domain::models::users::user_repository::IUserRepository,
 };
 
 #[derive(Serialize)]

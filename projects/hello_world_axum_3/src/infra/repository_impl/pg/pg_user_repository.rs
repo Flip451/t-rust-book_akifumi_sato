@@ -2,12 +2,14 @@ use axum::async_trait;
 use sqlx::{pool::PoolConnection, FromRow, PgConnection, PgPool, Postgres};
 use uuid::Uuid;
 
-use crate::{
-    domain::{
-        models::users::{User, UserId, UserName},
-        value_object::ValueObject,
+use crate::domain::{
+    models::users::{
+        user::User,
+        user_id::UserId,
+        user_name::UserName,
+        user_repository::{IUserRepository, Result, UserRepositoryError},
     },
-    infra::repository::users::{IUserRepository, Result, UserRepositoryError},
+    value_object::ValueObject,
 };
 
 #[derive(FromRow)]

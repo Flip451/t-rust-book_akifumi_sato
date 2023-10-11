@@ -1,7 +1,7 @@
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::domain::models::users::{User, UserId};
+use crate::domain::models::users::{user::User, user_id::UserId};
 
 #[derive(Debug, Error, PartialEq)]
 pub enum UserApplicationError {

@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use axum::async_trait;
 
+use crate::domain::models::users::{user_id::UserId, user_repository::IUserRepository};
+
 use super::{user_application_error::UserApplicationError, user_data::UserData, Result};
-use crate::{domain::models::users::UserId, infra::repository::users::IUserRepository};
 
 // trait of application service to get a user
 #[async_trait]
@@ -52,7 +53,7 @@ mod tests {
 
     use crate::{
         domain::{
-            models::users::{User, UserName},
+            models::users::{user::User, user_name::UserName},
             value_object::ValueObject,
         },
         infra::repository_impl::in_memory::users::in_memory_user_repository::InMemoryUserRepository,

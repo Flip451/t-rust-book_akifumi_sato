@@ -6,8 +6,7 @@ pub mod user_delete_application_service;
 pub mod user_data;
 pub mod user_application_error;
 
-use anyhow::Result as AnyhowResult;
 
 use self::user_application_error::UserApplicationError;
 
-pub type Result<T> = AnyhowResult<T, UserApplicationError>;
+pub type Result<T> = anyhow::Result<T, UserApplicationError>;
