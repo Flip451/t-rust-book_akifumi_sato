@@ -4,9 +4,9 @@ use axum::async_trait;
 
 use super::Result;
 
-use crate::{
-    domain::models::labels::LabelId,
-    infra::repository::labels::{ILabelRepository, LabelRepositoryError},
+use crate::domain::models::labels::{
+    label_id::LabelId,
+    label_repository::{ILabelRepository, LabelRepositoryError},
 };
 
 use super::label_application_error::LabelApplicationError;
@@ -72,7 +72,7 @@ mod tests {
     use super::*;
     use crate::{
         domain::{
-            models::labels::{Label, LabelName},
+            models::labels::{label::Label, label_name::LabelName},
             value_object::ValueObject,
         },
         infra::repository_impl::in_memory::labels::in_memory_label_repository::InMemoryLabelRepository,
@@ -92,7 +92,8 @@ mod tests {
         }
 
         // Delete stored label
-        let label_delete_application_service = LabelDeleteApplicationService::new(repository.clone());
+        let label_delete_application_service =
+            LabelDeleteApplicationService::new(repository.clone());
         let command = LabelDeleteCommand {
             label_id: label_id.value().to_string(),
         };
@@ -111,7 +112,8 @@ mod tests {
         let repository = Arc::new(InMemoryLabelRepository::new());
 
         // try to delete label with illegal-formated label-id
-        let label_delete_application_service = LabelDeleteApplicationService::new(repository.clone());
+        let label_delete_application_service =
+            LabelDeleteApplicationService::new(repository.clone());
         let command = LabelDeleteCommand {
             label_id: "incorrect-label-id".to_string(),
         };
@@ -130,7 +132,8 @@ mod tests {
         let repository = Arc::new(InMemoryLabelRepository::new());
 
         // try to delete label which does not exist
-        let label_delete_application_service = LabelDeleteApplicationService::new(repository.clone());
+        let label_delete_application_service =
+            LabelDeleteApplicationService::new(repository.clone());
         let command = LabelDeleteCommand {
             label_id: Uuid::new_v4().to_string(),
         };

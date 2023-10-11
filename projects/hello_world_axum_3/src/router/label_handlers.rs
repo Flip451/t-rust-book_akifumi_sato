@@ -18,7 +18,7 @@ use crate::{
         label_get_application_service::{ILabelGetApplicationService, LabelGetCommand},
         label_update_application_service::{ILabelUpdateApplicationService, LabelUpdateCommand},
     },
-    infra::repository::labels::ILabelRepository,
+    domain::models::labels::label_repository::ILabelRepository,
 };
 
 #[derive(Serialize)]

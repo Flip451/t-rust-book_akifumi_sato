@@ -2,12 +2,14 @@ use axum::async_trait;
 use sqlx::{pool::PoolConnection, FromRow, PgConnection, PgPool, Postgres};
 use uuid::Uuid;
 
-use crate::{
-    domain::{
-        models::labels::{Label, LabelId, LabelName},
-        value_object::ValueObject,
+use crate::domain::{
+    models::labels::{
+        label::Label,
+        label_id::LabelId,
+        label_name::LabelName,
+        label_repository::{ILabelRepository, LabelRepositoryError, Result},
     },
-    infra::repository::labels::{ILabelRepository, Result, LabelRepositoryError},
+    value_object::ValueObject,
 };
 
 #[derive(FromRow)]
@@ -20,8 +22,8 @@ impl LabelFromRow {
     fn into_label(self) -> Result<Label> {
         let label_id =
             LabelId::new(self.id).map_err(|e| LabelRepositoryError::Unexpected(e.to_string()))?;
-        let label_name =
-            LabelName::new(self.name).map_err(|e| LabelRepositoryError::Unexpected(e.to_string()))?;
+        let label_name = LabelName::new(self.name)
+            .map_err(|e| LabelRepositoryError::Unexpected(e.to_string()))?;
         Ok(Label::build(label_id, label_name))
     }
 }

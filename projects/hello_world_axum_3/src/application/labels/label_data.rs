@@ -1,7 +1,7 @@
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::domain::{models::labels::Label, value_object::ValueObject};
+use crate::domain::{models::labels::label::Label, value_object::ValueObject};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct LabelData {

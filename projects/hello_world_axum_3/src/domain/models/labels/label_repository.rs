@@ -1,7 +1,7 @@
 use axum::async_trait;
 use thiserror::Error;
 
-use crate::domain::models::labels::*;
+use super::{label::Label, label_id::LabelId, label_name::LabelName};
 
 pub type Result<T> = anyhow::Result<T, LabelRepositoryError>;
 

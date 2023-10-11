@@ -16,6 +16,7 @@ use crate::infra::repository_impl::in_memory::{
     todos::in_memory_todo_repository::InMemoryTodoRepository,
     users::in_memory_user_repository::InMemoryUserRepository,
 };
+
 use crate::{
     application::{
         labels::{
@@ -41,14 +42,12 @@ use crate::{
         },
     },
     domain::models::{
-        todos::todo_repository::ITodoRepository, users::user_repository::IUserRepository,
+        labels::label_repository::ILabelRepository, todos::todo_repository::ITodoRepository,
+        users::user_repository::IUserRepository,
     },
-    infra::{
-        repository::labels::ILabelRepository,
-        repository_impl::pg::{
-            pg_label_repository::PgLabelRepository, pg_todo_repository::PgTodoRepository,
-            pg_user_repository::PgUserRepository,
-        },
+    infra::repository_impl::pg::{
+        pg_label_repository::PgLabelRepository, pg_todo_repository::PgTodoRepository,
+        pg_user_repository::PgUserRepository,
     },
 };
 

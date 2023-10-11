@@ -4,13 +4,12 @@ use axum::async_trait;
 
 use super::{label_data::LabelData, Result};
 
-use crate::{
-    domain::{
-        models::labels::{LabelId, LabelName},
-        services::label_service::LabelService,
-        value_object::ValueObject,
+use crate::domain::{
+    models::labels::{
+        label_id::LabelId, label_name::LabelName, label_repository::ILabelRepository,
     },
-    infra::repository::labels::ILabelRepository,
+    services::label_service::LabelService,
+    value_object::ValueObject,
 };
 
 use super::label_application_error::LabelApplicationError;
@@ -89,7 +88,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        domain::models::labels::Label,
+        domain::models::labels::label::Label,
         infra::repository_impl::in_memory::labels::in_memory_label_repository::InMemoryLabelRepository,
     };
 
@@ -109,7 +108,8 @@ mod tests {
         }
 
         // Update stored label with 1-letter name
-        let label_update_application_service = LabelUpdateApplicationService::new(repository.clone());
+        let label_update_application_service =
+            LabelUpdateApplicationService::new(repository.clone());
         let command = LabelUpdateCommand {
             label_id: label_id.value().to_string(),
             label_name: Some("1".to_string()),
@@ -142,7 +142,8 @@ mod tests {
         }
 
         // Update stored label with 19-letter name
-        let label_update_application_service = LabelUpdateApplicationService::new(repository.clone());
+        let label_update_application_service =
+            LabelUpdateApplicationService::new(repository.clone());
         let command = LabelUpdateCommand {
             label_id: label_id.value().to_string(),
             label_name: Some("1234567890123456789".to_string()),
@@ -175,7 +176,8 @@ mod tests {
         }
 
         // Try update stored label with empty name
-        let label_update_application_service = LabelUpdateApplicationService::new(repository.clone());
+        let label_update_application_service =
+            LabelUpdateApplicationService::new(repository.clone());
         let command = LabelUpdateCommand {
             label_id: label_id.value().to_string(),
             label_name: Some("".to_string()),
@@ -205,7 +207,8 @@ mod tests {
         }
 
         // Try update stored label with 20-letter name
-        let label_update_application_service = LabelUpdateApplicationService::new(repository.clone());
+        let label_update_application_service =
+            LabelUpdateApplicationService::new(repository.clone());
         let command = LabelUpdateCommand {
             label_id: label_id.value().to_string(),
             label_name: Some("12345678901234567890".to_string()),
@@ -244,7 +247,8 @@ mod tests {
         }
 
         // Try update the 1st label with 2nd name's name
-        let label_update_application_service = LabelUpdateApplicationService::new(repository.clone());
+        let label_update_application_service =
+            LabelUpdateApplicationService::new(repository.clone());
         let command = LabelUpdateCommand {
             label_id: label_id_1.value().to_string(),
             label_name: Some("tester-2".to_string()),
@@ -264,7 +268,8 @@ mod tests {
 
         // Try to update not-stored label
         let label_id = Uuid::new_v4();
-        let label_update_application_service = LabelUpdateApplicationService::new(repository.clone());
+        let label_update_application_service =
+            LabelUpdateApplicationService::new(repository.clone());
         let command = LabelUpdateCommand {
             label_id: label_id.to_string(),
             label_name: Some("123".to_string()),
@@ -273,7 +278,9 @@ mod tests {
 
         assert_eq!(
             result_of_label_update,
-            Err(LabelApplicationError::LabelNotFound(LabelId::new(label_id)?))
+            Err(LabelApplicationError::LabelNotFound(LabelId::new(
+                label_id
+            )?))
         );
         Ok(())
     }
@@ -284,7 +291,8 @@ mod tests {
 
         // Try to update not-stored label
         let label_id = "illegal-label-id";
-        let label_update_application_service = LabelUpdateApplicationService::new(repository.clone());
+        let label_update_application_service =
+            LabelUpdateApplicationService::new(repository.clone());
         let command = LabelUpdateCommand {
             label_id: label_id.to_string(),
             label_name: Some("123".to_string()),
