@@ -4,9 +4,9 @@ use axum::async_trait;
 
 use super::Result;
 
-use crate::{
-    domain::models::todos::TodoId,
-    infra::repository::todos::{ITodoRepository, TodoRepositoryError},
+use crate::domain::models::todos::{
+    todo_id::TodoId,
+    todo_repository::{ITodoRepository, TodoRepositoryError},
 };
 
 use super::todo_application_error::TodoApplicationError;
@@ -72,7 +72,7 @@ mod tests {
     use super::*;
     use crate::{
         domain::{
-            models::todos::{Todo, TodoText},
+            models::todos::{todo::Todo, todo_text::TodoText},
             value_object::ValueObject,
         },
         infra::repository_impl::in_memory::todos::in_memory_todo_repository::InMemoryTodoRepository,

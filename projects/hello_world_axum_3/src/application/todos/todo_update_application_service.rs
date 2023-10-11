@@ -4,12 +4,9 @@ use axum::async_trait;
 
 use super::{todo_data::TodoData, Result};
 
-use crate::{
-    domain::{
-        models::todos::{TodoId, TodoText},
-        value_object::ValueObject,
-    },
-    infra::repository::todos::ITodoRepository,
+use crate::domain::{
+    models::todos::{todo_id::TodoId, todo_repository::ITodoRepository, todo_text::TodoText},
+    value_object::ValueObject,
 };
 
 use super::todo_application_error::TodoApplicationError;
@@ -25,7 +22,7 @@ pub trait ITodoUpdateApplicationService<T: ITodoRepository> {
 pub struct TodoUpdateCommand {
     pub todo_id: String,
     pub todo_text: Option<String>,
-    pub completed: Option<bool>
+    pub completed: Option<bool>,
 }
 
 // impl of application service to update todo
@@ -45,7 +42,7 @@ impl<T: ITodoRepository> ITodoUpdateApplicationService<T> for TodoUpdateApplicat
         let TodoUpdateCommand {
             todo_id: todo_id_string,
             todo_text: todo_text_string,
-            completed
+            completed,
         } = command;
 
         let todo_id = TodoId::parse(todo_id_string)
@@ -83,7 +80,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        domain::models::todos::Todo,
+        domain::models::todos::todo::Todo,
         infra::repository_impl::in_memory::todos::in_memory_todo_repository::InMemoryTodoRepository,
     };
 
@@ -107,7 +104,7 @@ mod tests {
         let command = TodoUpdateCommand {
             todo_id: todo_id.value().to_string(),
             todo_text: Some("1".to_string()),
-            completed: None
+            completed: None,
         };
         let todo_found = todo_update_application_service.handle(command).await?;
 
@@ -215,7 +212,7 @@ mod tests {
         let command = TodoUpdateCommand {
             todo_id: todo_id.value().to_string(),
             todo_text: Some("".to_string()),
-            completed: None
+            completed: None,
         };
         let result_of_todo_update = todo_update_application_service.handle(command).await;
 
@@ -269,7 +266,7 @@ mod tests {
         let command = TodoUpdateCommand {
             todo_id: todo_id.to_string(),
             todo_text: Some("test-1".to_string()),
-            completed: None
+            completed: None,
         };
         let result_of_todo_update = todo_update_application_service.handle(command).await;
 
@@ -290,7 +287,7 @@ mod tests {
         let command = TodoUpdateCommand {
             todo_id: todo_id.to_string(),
             todo_text: Some("test-1".to_string()),
-            completed: None
+            completed: None,
         };
         let result_of_todo_update = todo_update_application_service.handle(command).await;
 

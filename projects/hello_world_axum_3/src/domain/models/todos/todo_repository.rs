@@ -1,7 +1,7 @@
 use axum::async_trait;
 use thiserror::Error;
 
-use crate::domain::models::todos::*;
+use super::{todo::Todo, todo_id::TodoId};
 
 pub type Result<T> = anyhow::Result<T, TodoRepositoryError>;
 

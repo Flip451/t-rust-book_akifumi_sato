@@ -1,7 +1,7 @@
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::domain::{models::todos::Todo, value_object::ValueObject};
+use crate::domain::{models::todos::todo::Todo, value_object::ValueObject};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct TodoData {
@@ -13,11 +13,15 @@ pub struct TodoData {
 impl TodoData {
     pub fn new(todo: Todo) -> Self {
         let todo_id = todo.todo_id().clone().into_value();
-        let Todo { todo_text, completed, .. } = todo;
+        let Todo {
+            todo_text,
+            completed,
+            ..
+        } = todo;
         Self {
             todo_id,
             todo_text: todo_text.into_value(),
-            completed
+            completed,
         }
     }
 }

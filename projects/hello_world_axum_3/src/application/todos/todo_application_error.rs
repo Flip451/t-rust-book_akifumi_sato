@@ -1,7 +1,7 @@
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::domain::models::todos::{Todo, TodoId};
+use crate::domain::models::todos::{todo::Todo, todo_id::TodoId};
 
 #[derive(Debug, Error, PartialEq)]
 pub enum TodoApplicationError {

@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use axum::async_trait;
 
+use crate::domain::models::todos::todo_repository::ITodoRepository;
+
 use super::{todo_application_error::TodoApplicationError, todo_data::TodoData, Result};
-use crate::infra::repository::todos::ITodoRepository;
 
 // trait of application service to get todos
 #[async_trait]
@@ -44,7 +45,7 @@ mod tests {
 
     use crate::{
         domain::{
-            models::todos::{Todo, TodoText},
+            models::todos::{todo::Todo, todo_text::TodoText},
             value_object::ValueObject,
         },
         infra::repository_impl::in_memory::todos::in_memory_todo_repository::InMemoryTodoRepository,
@@ -93,10 +94,7 @@ mod tests {
         // Sort todos alphabetically
         todos.sort_by(|a, b| a.todo_text.cmp(&b.todo_text));
 
-        assert_eq!(
-            vec![TodoData::new(todo_1), TodoData::new(todo_2)],
-            todos
-        );
+        assert_eq!(vec![TodoData::new(todo_1), TodoData::new(todo_2)], todos);
 
         Ok(())
     }

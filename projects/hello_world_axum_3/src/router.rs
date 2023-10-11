@@ -40,9 +40,11 @@ use crate::{
             user_update_application_service::UserUpdateApplicationService,
         },
     },
-    domain::models::users::user_repository::IUserRepository,
+    domain::models::{
+        todos::todo_repository::ITodoRepository, users::user_repository::IUserRepository,
+    },
     infra::{
-        repository::{labels::ILabelRepository, todos::ITodoRepository},
+        repository::labels::ILabelRepository,
         repository_impl::pg::{
             pg_label_repository::PgLabelRepository, pg_todo_repository::PgTodoRepository,
             pg_user_repository::PgUserRepository,

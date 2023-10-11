@@ -18,7 +18,7 @@ use crate::{
         todo_get_application_service::{ITodoGetApplicationService, TodoGetCommand},
         todo_update_application_service::{ITodoUpdateApplicationService, TodoUpdateCommand},
     },
-    infra::repository::todos::ITodoRepository,
+    domain::models::todos::todo_repository::ITodoRepository,
 };
 
 #[derive(Deserialize)]
