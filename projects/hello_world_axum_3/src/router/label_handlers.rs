@@ -28,7 +28,7 @@ pub struct LabelResponse {
 }
 
 impl LabelResponse {
-    fn new(label_data: LabelData) -> Self {
+    pub fn new(label_data: LabelData) -> Self {
         Self {
             id: label_data.label_id.to_string(),
             name: label_data.label_name,

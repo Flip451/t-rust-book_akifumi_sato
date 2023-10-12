@@ -117,7 +117,7 @@ where
                     label_handlers::delete::<LabelRep, LabelDeleteApplicationService<LabelRep>>,
                 ),
         )
-        .layer(Extension(Arc::new(label_repository)))
+        .layer(Extension(Arc::new(label_repository.clone())))
         // todos
         .route(
             "/todos",
@@ -142,6 +142,7 @@ where
                 .delete(todo_handlers::delete::<TodoRep, TodoDeleteApplicationService<TodoRep>>),
         )
         .layer(Extension(Arc::new(todo_repository)))
+        .layer(Extension(Arc::new(label_repository)))
         // users
         .route(
             "/users",

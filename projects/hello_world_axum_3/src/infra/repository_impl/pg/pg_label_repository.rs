@@ -13,13 +13,13 @@ use crate::domain::{
 };
 
 #[derive(FromRow)]
-struct LabelFromRow {
+pub struct LabelRow {
     id: Uuid,
     name: String,
 }
 
-impl LabelFromRow {
-    fn into_label(self) -> Result<Label> {
+impl LabelRow {
+    pub fn into_label(self) -> Result<Label> {
         let label_id =
             LabelId::new(self.id).map_err(|e| LabelRepositoryError::Unexpected(e.to_string()))?;
         let label_name = LabelName::new(self.name)
@@ -79,16 +79,16 @@ impl ILabelRepository for PgLabelRepository {
     }
 }
 
-struct InternalLabelRepository<'a> {
+pub(super) struct InternalLabelRepository<'a> {
     conn: &'a mut PgConnection,
 }
 
 impl<'a> InternalLabelRepository<'a> {
-    fn new(conn: &'a mut PgConnection) -> Self {
+    pub(super) fn new(conn: &'a mut PgConnection) -> Self {
         Self { conn }
     }
 
-    async fn save(&mut self, label: &Label) -> Result<()> {
+    pub(super) async fn save(&mut self, label: &Label) -> Result<()> {
         let sql = r#"
 insert into labels (id, name)
 values ($1, $2)
@@ -106,7 +106,7 @@ do update set name=$2
 
     async fn find(&mut self, label_id: &LabelId) -> Result<Option<Label>> {
         let sql = r#"select * from labels where id=$1"#;
-        let label_from_row = sqlx::query_as::<_, LabelFromRow>(sql)
+        let label_from_row = sqlx::query_as::<_, LabelRow>(sql)
             .bind(label_id.value())
             .fetch_optional(&mut *self.conn)
             .await
@@ -117,7 +117,7 @@ do update set name=$2
 
     async fn find_by_name(&mut self, label_name: &LabelName) -> Result<Option<Label>> {
         let sql = r#"select * from labels where name=$1"#;
-        let label_from_row = sqlx::query_as::<_, LabelFromRow>(sql)
+        let label_from_row = sqlx::query_as::<_, LabelRow>(sql)
             .bind(label_name.value())
             .fetch_optional(&mut *self.conn)
             .await
@@ -128,7 +128,7 @@ do update set name=$2
 
     async fn find_all(&mut self) -> Result<Vec<Label>> {
         let sql = r#"select * from labels order by id desc"#;
-        let labels_from_rows = sqlx::query_as::<_, LabelFromRow>(sql)
+        let labels_from_rows = sqlx::query_as::<_, LabelRow>(sql)
             .fetch_all(&mut *self.conn)
             .await
             .map_err(|e| LabelRepositoryError::Unexpected(e.to_string()))?;

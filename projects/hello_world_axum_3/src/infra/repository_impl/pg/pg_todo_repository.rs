@@ -17,13 +17,13 @@ use crate::domain::{
     value_object::ValueObject,
 };
 
-#[derive(FromRow)]
+#[derive(Debug, FromRow)]
 struct TodoRow {
     id: Uuid,
     text: String,
     completed: bool,
-    label_id: Uuid,
-    label_name: String,
+    label_id: Option<Uuid>,
+    label_name: Option<String>,
 }
 
 impl TodoRow {
@@ -35,12 +35,18 @@ impl TodoRow {
         let completed = self.completed;
 
         let mut labels = HashSet::new();
-        let label_id = LabelId::new(self.label_id)
-            .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
-        let label_name = LabelName::new(self.label_name)
-            .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
-        let label = Label::build(label_id, label_name);
-        labels.insert(label);
+        if let Some(label_id) = self.label_id {
+            let label_id = LabelId::new(label_id)
+                .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+            let label_name = self.label_name.ok_or(TodoRepositoryError::Unexpected(
+                "Unexpected error: The label corresponding to label_id was not found.".to_string(),
+            ))?;
+            let label_name = LabelName::new(label_name)
+                .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+            let label = Label::build(label_id, label_name);
+            labels.insert(label);
+        }
+
         Ok(Todo::build(todo_id, todo_text, completed, labels))
     }
 }
@@ -56,9 +62,9 @@ impl Todo {
 
             match todo_with_same_id {
                 Some(todo_with_same_id) => {
-                    let label_id = LabelId::new(todo_row.label_id)
+                    let label_id = LabelId::new(todo_row.label_id.unwrap())
                         .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
-                    let label_name = LabelName::new(todo_row.label_name)
+                    let label_name = LabelName::new(todo_row.label_name.unwrap())
                         .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
                     let label = Label::build(label_id, label_name);
                     todo_with_same_id.labels.insert(label);
@@ -69,6 +75,22 @@ impl Todo {
             };
         }
         Ok(todos)
+    }
+}
+
+#[derive(FromRow)]
+pub struct LabelRow {
+    label_id: Uuid,
+    label_name: String,
+}
+
+impl LabelRow {
+    pub fn into_label(self) -> Result<Label> {
+        let label_id =
+            LabelId::new(self.label_id).map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+        let label_name = LabelName::new(self.label_name)
+            .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+        Ok(Label::build(label_id, label_name))
     }
 }
 
@@ -141,7 +163,8 @@ impl<'a> InternalTodoRepository<'a> {
         Self { conn }
     }
 
-    // todo 1 個、label N 個、todo_labels N 個を upsert する
+    // todo を生成し
+    // todo_labels の差分を取得し、それを反映する
     async fn save(&mut self, todo: &Todo) -> Result<()> {
         // 1. save todos
         let sql = r#"
@@ -159,24 +182,48 @@ impl<'a> InternalTodoRepository<'a> {
             .await
             .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
 
-        // 2. save labels and todo_labels
-        for label in &todo.labels {
-            // 2-1. save labels
+        // 2. get todo_labels difference
+        // 2-1. Get labels associated with given todo
+        let sql = r#"
+            select tl.label_id, l.name as label_name 
+            from todo_labels as tl inner join labels as l
+            on tl.label_id=l.id
+            where tl.todo_id=$1"#;
+
+        // 2-2. get a hash set of currently stored labels.
+        let current_label_rows = sqlx::query_as::<_, LabelRow>(sql)
+            .bind(todo.todo_id().value())
+            .fetch_all(&mut *self.conn)
+            .await
+            .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+        let current_label_vec: Vec<Label> = current_label_rows
+            .into_iter()
+            .map(|row| row.into_label())
+            .collect::<Result<Vec<Label>>>()?;
+        let current_labels: HashSet<Label> = HashSet::from_iter(current_label_vec);
+
+        // 2-3. calculate todo_labels difference
+        let new_labels = &todo.labels;
+        let labels_to_be_removed = current_labels.difference(new_labels);
+        let labels_to_be_added = new_labels.difference(&current_labels);
+
+        // 3. save todo_labels difference
+        // 3-1. remove labels (not delete)
+        for label_to_be_removed in labels_to_be_removed {
             let sql = r#"
-                insert into labels (id, name)
-                values ($1, $2)
-                on conflict (id)
-                do update set name=$2
-                "#;
+                DELETE FROM todo_labels
+                WHERE todo_id=$1 AND label_id=$2"#;
 
             sqlx::query(sql)
-                .bind(label.label_id().value())
-                .bind(label.label_name.value())
+                .bind(todo.todo_id().value())
+                .bind(label_to_be_removed.label_id().value())
                 .execute(&mut *self.conn)
                 .await
                 .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+        }
 
-            // 2-2. save todo_labels
+        // 3-2. remove labels (not delete)
+        for label_to_be_added in labels_to_be_added {
             let sql = r#"
                 insert into todo_labels (todo_id, label_id)
                 values ($1, $2)
@@ -185,7 +232,7 @@ impl<'a> InternalTodoRepository<'a> {
 
             sqlx::query(sql)
                 .bind(todo.todo_id().value())
-                .bind(label.label_id().value())
+                .bind(label_to_be_added.label_id().value())
                 .execute(&mut *self.conn)
                 .await
                 .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
@@ -211,7 +258,7 @@ impl<'a> InternalTodoRepository<'a> {
         let mut todos = Todo::from_todo_rows(todo_rows)?;
         match todos.len() {
             0 | 1 => Ok(todos.pop()),
-            _ => Err(TodoRepositoryError::Unexpected("UNEXPECTED ERROR!!: SQL execution results are not as expected: contains multiple todo_ids.".to_string()))
+            _ => panic!("UNEXPECTED!!: SQL execution results are not as expected: contains multiple todo_ids.")
         }
     }
 
@@ -228,10 +275,7 @@ impl<'a> InternalTodoRepository<'a> {
             .await
             .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
 
-        let todos = todos_from_rows
-            .into_iter()
-            .map(|row| row.into_todo())
-            .collect::<Result<Vec<Todo>>>()?;
+        let todos = Todo::from_todo_rows(todos_from_rows)?;
         Ok(todos)
     }
 
@@ -269,23 +313,33 @@ mod tests {
     use anyhow::Result;
 
     use super::*;
-    use crate::pg_pool;
+    use crate::{pg_pool, infra::repository_impl::pg::pg_label_repository::InternalLabelRepository};
 
     #[tokio::test]
     async fn todo_crud_senario() -> Result<()> {
         let pool = pg_pool::connect_to_test_pg_pool().await;
 
         let mut tx = pool.begin().await?;
-        let mut internal_todo_repository = InternalTodoRepository::new(&mut tx);
-
-        let text = TodoText::new("todo text".to_string())?;
+        let mut internal_label_repository = InternalLabelRepository::new(&mut tx);
+        
         let mut labels = HashSet::<Label>::new();
+        
+        // save labels for test
         let label_1 = Label::new(LabelName::new("label_1".to_string())?)?;
+        internal_label_repository.save(&label_1).await?;
         labels.insert(label_1);
+        
         let label_2 = Label::new(LabelName::new("label_2".to_string())?)?;
+        internal_label_repository.save(&label_2).await?;
         labels.insert(label_2);
+        
         let label_3 = Label::new(LabelName::new("label_3".to_string())?)?;
+        internal_label_repository.save(&label_3).await?;
         labels.insert(label_3);
+        
+        let mut internal_todo_repository = InternalTodoRepository::new(&mut tx);
+        
+        let text = TodoText::new("todo text".to_string())?;
         let new_todo = Todo::new(text, labels)?;
         let new_todo_id = new_todo.todo_id();
 
@@ -302,6 +356,7 @@ mod tests {
         assert_eq!(expected, todo_found);
         assert_eq!("todo text", todo_found.todo_text.value());
         assert_eq!(expected.completed, todo_found.completed);
+        assert_eq!(expected.labels, todo_found.labels);
 
         // find_all
         let expected = new_todo.clone();
@@ -314,8 +369,10 @@ mod tests {
         // save (update)
         let mut updated_todo = new_todo.clone();
         let updated_text = TodoText::new("updated text".to_string())?;
+        let updated_labels = HashSet::new();
         updated_todo.todo_text = updated_text;
         updated_todo.completed = true;
+        updated_todo.labels = updated_labels;
         internal_todo_repository.save(&updated_todo).await?;
 
         // find
@@ -328,6 +385,7 @@ mod tests {
         assert_eq!(expected, todo_found);
         assert_eq!("updated text", todo_found.todo_text.value());
         assert_eq!(true, todo_found.completed);
+        assert_eq!(HashSet::new(), todo_found.labels);
 
         // delete
         let todo_id = new_todo_id.clone();

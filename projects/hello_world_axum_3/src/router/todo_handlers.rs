@@ -23,6 +23,8 @@ use crate::{
     },
 };
 
+use super::label_handlers::LabelResponse;
+
 #[derive(Deserialize)]
 pub struct TodoCreatePayload {
     text: String,
@@ -43,14 +45,21 @@ pub struct TodoResponse {
     id: String,
     text: String,
     completed: bool,
+    labels: Vec<LabelResponse>,
 }
 
 impl TodoResponse {
     fn new(todo_data: TodoData) -> Self {
+        let labels = todo_data
+            .labels
+            .into_iter()
+            .map(|label_data| LabelResponse::new(label_data))
+            .collect();
         Self {
             id: todo_data.todo_id.to_string(),
             text: todo_data.todo_text,
             completed: todo_data.completed,
+            labels,
         }
     }
 }
@@ -74,7 +83,8 @@ impl TodoUpdatePayload {
 }
 
 pub async fn create<TodoRep, LabelRep, AS>(
-    Extension((todo_repository, label_repository)): Extension<(Arc<TodoRep>, Arc<LabelRep>)>,
+    Extension(todo_repository): Extension<Arc<TodoRep>>,
+    Extension(label_repository): Extension<Arc<LabelRep>>,
     Json(payload): Json<TodoCreatePayload>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
 where
@@ -199,7 +209,8 @@ where
 }
 
 pub async fn update<TodoRep, LabelRep, AS>(
-    Extension((todo_repository, label_repository)): Extension<(Arc<TodoRep>, Arc<LabelRep>)>,
+    Extension(todo_repository): Extension<Arc<TodoRep>>,
+    Extension(label_repository): Extension<Arc<LabelRep>>,
     Path(id): Path<String>,
     Json(payload): Json<TodoUpdatePayload>,
 ) -> Result<impl IntoResponse, impl IntoResponse>
