@@ -86,8 +86,8 @@ pub struct LabelRow {
 
 impl LabelRow {
     pub fn into_label(self) -> Result<Label> {
-        let label_id =
-            LabelId::new(self.label_id).map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
+        let label_id = LabelId::new(self.label_id)
+            .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
         let label_name = LabelName::new(self.label_name)
             .map_err(|e| TodoRepositoryError::Unexpected(e.to_string()))?;
         Ok(Label::build(label_id, label_name))
@@ -154,18 +154,18 @@ impl ITodoRepository for PgTodoRepository {
     }
 }
 
-struct InternalTodoRepository<'a> {
+pub(super) struct InternalTodoRepository<'a> {
     conn: &'a mut PgConnection,
 }
 
 impl<'a> InternalTodoRepository<'a> {
-    fn new(conn: &'a mut PgConnection) -> Self {
+    pub(super) fn new(conn: &'a mut PgConnection) -> Self {
         Self { conn }
     }
 
     // todo を生成し
     // todo_labels の差分を取得し、それを反映する
-    async fn save(&mut self, todo: &Todo) -> Result<()> {
+    pub(super) async fn save(&mut self, todo: &Todo) -> Result<()> {
         // 1. save todos
         let sql = r#"
             insert into todos (id, text, completed)
@@ -282,16 +282,16 @@ impl<'a> InternalTodoRepository<'a> {
     async fn delete(&mut self, todo: Todo) -> Result<()> {
         let id = todo.todo_id();
 
-        // 1. delete todo_labels
-        let sql = r#"delete from todo_labels where todo_id=$1"#;
-        sqlx::query(sql)
-            .bind(id.value())
-            .execute(&mut *self.conn)
-            .await
-            .map_err(|e| match e {
-                sqlx::Error::RowNotFound => TodoRepositoryError::NotFound(id.clone()),
-                _ => TodoRepositoryError::Unexpected(e.to_string()),
-            })?;
+        // 1. delete todo_labels (`ON DELETE CASCADE` が設定してあるため不要)
+        // let sql = r#"delete from todo_labels where todo_id=$1"#;
+        // sqlx::query(sql)
+        //     .bind(id.value())
+        //     .execute(&mut *self.conn)
+        //     .await
+        //     .map_err(|e| match e {
+        //         sqlx::Error::RowNotFound => TodoRepositoryError::NotFound(id.clone()),
+        //         _ => TodoRepositoryError::Unexpected(e.to_string()),
+        //     })?;
 
         // 2. delete todo
         let sql = r#"delete from todos where id=$1"#;
@@ -313,7 +313,15 @@ mod tests {
     use anyhow::Result;
 
     use super::*;
-    use crate::{pg_pool, infra::repository_impl::pg::pg_label_repository::InternalLabelRepository};
+    use crate::{
+        infra::repository_impl::pg::pg_label_repository::InternalLabelRepository, pg_pool,
+    };
+
+    #[derive(FromRow)]
+    struct TodoLabelRow {
+        // todo_id: Uuid,
+        // label_id: Uuid,
+    }
 
     #[tokio::test]
     async fn todo_crud_senario() -> Result<()> {
@@ -321,24 +329,24 @@ mod tests {
 
         let mut tx = pool.begin().await?;
         let mut internal_label_repository = InternalLabelRepository::new(&mut tx);
-        
+
         let mut labels = HashSet::<Label>::new();
-        
+
         // save labels for test
         let label_1 = Label::new(LabelName::new("label_1".to_string())?)?;
         internal_label_repository.save(&label_1).await?;
         labels.insert(label_1);
-        
+
         let label_2 = Label::new(LabelName::new("label_2".to_string())?)?;
         internal_label_repository.save(&label_2).await?;
         labels.insert(label_2);
-        
+
         let label_3 = Label::new(LabelName::new("label_3".to_string())?)?;
         internal_label_repository.save(&label_3).await?;
         labels.insert(label_3);
-        
+
         let mut internal_todo_repository = InternalTodoRepository::new(&mut tx);
-        
+
         let text = TodoText::new("todo text".to_string())?;
         let new_todo = Todo::new(text, labels)?;
         let new_todo_id = new_todo.todo_id();
@@ -397,6 +405,13 @@ mod tests {
         // find
         let todo_found = internal_todo_repository.find(&todo_id).await?;
         assert_eq!(todo_found, None);
+
+        // find todo_labels
+        let sql = r#"select * from todo_labels"#;
+        let todo_rows = sqlx::query_as::<_, TodoLabelRow>(sql)
+            .fetch_all(&mut *tx)
+            .await?;
+        assert!(todo_rows.is_empty());
 
         tx.rollback().await?;
         Ok(())
