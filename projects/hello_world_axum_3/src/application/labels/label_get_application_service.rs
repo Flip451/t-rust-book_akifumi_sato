@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use axum::async_trait;
 
+use crate::domain::models::labels::{label_id::LabelId, label_repository::ILabelRepository};
+
 use super::{label_application_error::LabelApplicationError, label_data::LabelData, Result};
-use crate::{domain::models::labels::LabelId, infra::repository::labels::ILabelRepository};
 
 // trait of application service to get a label
 #[async_trait]
@@ -52,7 +53,7 @@ mod tests {
 
     use crate::{
         domain::{
-            models::labels::{Label, LabelName},
+            models::labels::{label::Label, label_name::LabelName},
             value_object::ValueObject,
         },
         infra::repository_impl::in_memory::labels::in_memory_label_repository::InMemoryLabelRepository,

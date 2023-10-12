@@ -5,9 +5,11 @@ use std::{
 
 use axum::async_trait;
 
-use crate::{
-    domain::models::labels::{Label, LabelId, LabelName},
-    infra::repository::labels::{ILabelRepository, Result, LabelRepositoryError},
+use crate::domain::models::labels::{
+    label::Label,
+    label_id::LabelId,
+    label_name::LabelName,
+    label_repository::{ILabelRepository, LabelRepositoryError, Result},
 };
 
 type TodoStore = HashMap<LabelId, Label>;

@@ -4,13 +4,10 @@ use axum::async_trait;
 
 use super::{user_data::UserData, Result};
 
-use crate::{
-    domain::{
-        models::users::{User, UserName},
-        services::user_service::UserService,
-        value_object::ValueObject,
-    },
-    infra::repository::users::IUserRepository,
+use crate::domain::{
+    models::users::{user::User, user_name::UserName, user_repository::IUserRepository},
+    services::user_service::UserService,
+    value_object::ValueObject,
 };
 
 use super::user_application_error::UserApplicationError;
@@ -48,7 +45,8 @@ impl<T: IUserRepository> IUserCreateApplicationService<T> for UserCreateApplicat
         } = command;
         let user_name = UserName::new(user_name_string)
             .map_err(|e| UserApplicationError::IllegalArgumentError(e.to_string()))?;
-        let new_user = User::new(user_name).map_err(|e| UserApplicationError::Unexpected(e.to_string()))?;
+        let new_user =
+            User::new(user_name).map_err(|e| UserApplicationError::Unexpected(e.to_string()))?;
 
         if self
             .user_service
@@ -74,7 +72,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        domain::models::users::UserId,
+        domain::models::users::user_id::UserId,
         infra::repository_impl::in_memory::users::in_memory_user_repository::InMemoryUserRepository,
     };
 

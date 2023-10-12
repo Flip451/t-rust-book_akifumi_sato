@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::domain::entity::Entity;
-use crate::domain::value_object::{Result, ValueObject};
+use crate::domain::value_object::ValueObject;
 
 use super::user_id::UserId;
 use super::user_name::UserName;
@@ -14,7 +14,7 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(user_name: UserName) -> Result<Self> {
+    pub fn new(user_name: UserName) -> anyhow::Result<Self> {
         let user_id = UserId::new(Uuid::new_v4())?;
         Ok(Self { user_id, user_name })
     }

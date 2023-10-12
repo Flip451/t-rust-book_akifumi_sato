@@ -1,10 +1,9 @@
-use anyhow::Result as AnyhowResult;
 use axum::async_trait;
 use thiserror::Error;
 
-use crate::domain::models::users::*;
+use super::{user::User, user_id::UserId, user_name::UserName};
 
-pub type Result<T> = AnyhowResult<T, UserRepositoryError>;
+pub type Result<T> = anyhow::Result<T, UserRepositoryError>;
 
 #[async_trait]
 pub trait IUserRepository: Clone + Send + Sync + 'static {

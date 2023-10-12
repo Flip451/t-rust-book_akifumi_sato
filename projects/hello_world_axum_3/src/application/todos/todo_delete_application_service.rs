@@ -4,9 +4,9 @@ use axum::async_trait;
 
 use super::Result;
 
-use crate::{
-    domain::models::todos::TodoId,
-    infra::repository::todos::{ITodoRepository, TodoRepositoryError},
+use crate::domain::models::todos::{
+    todo_id::TodoId,
+    todo_repository::{ITodoRepository, TodoRepositoryError},
 };
 
 use super::todo_application_error::TodoApplicationError;
@@ -64,7 +64,7 @@ impl<T: ITodoRepository> ITodoDeleteApplicationService<T> for TodoDeleteApplicat
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::{sync::Arc, collections::HashSet};
 
     use anyhow::Result;
     use uuid::Uuid;
@@ -72,7 +72,7 @@ mod tests {
     use super::*;
     use crate::{
         domain::{
-            models::todos::{Todo, TodoText},
+            models::todos::{todo::Todo, todo_text::TodoText},
             value_object::ValueObject,
         },
         infra::repository_impl::in_memory::todos::in_memory_todo_repository::InMemoryTodoRepository,
@@ -82,7 +82,7 @@ mod tests {
     async fn should_delete_todo() -> Result<()> {
         let repository = Arc::new(InMemoryTodoRepository::new());
 
-        let todo = Todo::new(TodoText::new("test-1".to_string())?)?;
+        let todo = Todo::new(TodoText::new("test-1".to_string())?, HashSet::new())?;
         let todo_id = todo.todo_id().clone();
 
         // Create todo in store

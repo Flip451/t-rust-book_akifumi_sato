@@ -1,7 +1,7 @@
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::domain::models::todos::{Todo, TodoId};
+use crate::domain::models::{todos::{todo::Todo, todo_id::TodoId}, labels::label_id::LabelId};
 
 #[derive(Debug, Error, PartialEq)]
 pub enum TodoApplicationError {
@@ -9,10 +9,14 @@ pub enum TodoApplicationError {
     DuplicatedTodo(Todo),
     #[error("Todo cannnot be found: [id: {0:?}]")]
     TodoNotFound(TodoId),
+    #[error("Label cannnot be found: [id: {0:?}]")]
+    LabelNotFound(LabelId),
     #[error("Given todo is incorrect: [{0}]")]
     IllegalArgumentError(String),
     #[error("Given todo id has incorrect format: [{0}]")]
     IllegalTodoId(String),
+    #[error("Given label id has incorrect format: [{0}]")]
+    IllegalLabelId(String),
     #[error("Unexpected error: [{0}]")]
     Unexpected(String),
 }

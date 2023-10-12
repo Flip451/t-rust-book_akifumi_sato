@@ -16,8 +16,16 @@ use crate::infra::repository_impl::in_memory::{
     todos::in_memory_todo_repository::InMemoryTodoRepository,
     users::in_memory_user_repository::InMemoryUserRepository,
 };
+
 use crate::{
     application::{
+        labels::{
+            label_create_application_service::LabelCreateApplicationService,
+            label_delete_application_service::LabelDeleteApplicationService,
+            label_get_all_aplication_service::LabelGetAllApplicationService,
+            label_get_application_service::LabelGetApplicationService,
+            label_update_application_service::LabelUpdateApplicationService,
+        },
         todos::{
             todo_create_application_service::TodoCreateApplicationService,
             todo_delete_application_service::TodoDeleteApplicationService,
@@ -31,14 +39,15 @@ use crate::{
             user_get_all_aplication_service::UserGetAllApplicationService,
             user_get_application_service::UserGetApplicationService,
             user_update_application_service::UserUpdateApplicationService,
-        }, labels::{label_get_all_aplication_service::LabelGetAllApplicationService, label_create_application_service::LabelCreateApplicationService, label_get_application_service::LabelGetApplicationService, label_update_application_service::LabelUpdateApplicationService, label_delete_application_service::LabelDeleteApplicationService},
-    },
-    infra::{
-        repository::{todos::ITodoRepository, users::IUserRepository, labels::ILabelRepository},
-        repository_impl::pg::{
-            pg_todo_repository::PgTodoRepository,
-            pg_user_repository::PgUserRepository, pg_label_repository::PgLabelRepository,
         },
+    },
+    domain::models::{
+        labels::label_repository::ILabelRepository, todos::todo_repository::ITodoRepository,
+        users::user_repository::IUserRepository,
+    },
+    infra::repository_impl::pg::{
+        pg_label_repository::PgLabelRepository, pg_todo_repository::PgTodoRepository,
+        pg_user_repository::PgUserRepository,
     },
 };
 
@@ -104,22 +113,36 @@ where
             "/labels/:id",
             get(label_handlers::get::<LabelRep, LabelGetApplicationService<LabelRep>>)
                 .patch(label_handlers::update::<LabelRep, LabelUpdateApplicationService<LabelRep>>)
-                .delete(label_handlers::delete::<LabelRep, LabelDeleteApplicationService<LabelRep>>),
+                .delete(
+                    label_handlers::delete::<LabelRep, LabelDeleteApplicationService<LabelRep>>,
+                ),
         )
-        .layer(Extension(Arc::new(label_repository)))
+        .layer(Extension(Arc::new(label_repository.clone())))
         // todos
         .route(
             "/todos",
-            get(todo_handlers::get_all::<TodoRep, TodoGetAllApplicationService<TodoRep>>)
-                .post(todo_handlers::create::<TodoRep, TodoCreateApplicationService<TodoRep>>),
+            get(todo_handlers::get_all::<TodoRep, TodoGetAllApplicationService<TodoRep>>).post(
+                todo_handlers::create::<
+                    TodoRep,
+                    LabelRep,
+                    TodoCreateApplicationService<TodoRep, LabelRep>,
+                >,
+            ),
         )
         .route(
             "/todos/:id",
             get(todo_handlers::get::<TodoRep, TodoGetApplicationService<TodoRep>>)
-                .patch(todo_handlers::update::<TodoRep, TodoUpdateApplicationService<TodoRep>>)
+                .patch(
+                    todo_handlers::update::<
+                        TodoRep,
+                        LabelRep,
+                        TodoUpdateApplicationService<TodoRep, LabelRep>,
+                    >,
+                )
                 .delete(todo_handlers::delete::<TodoRep, TodoDeleteApplicationService<TodoRep>>),
         )
         .layer(Extension(Arc::new(todo_repository)))
+        .layer(Extension(Arc::new(label_repository)))
         // users
         .route(
             "/users",

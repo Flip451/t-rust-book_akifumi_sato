@@ -4,13 +4,10 @@ use axum::async_trait;
 
 use super::{label_data::LabelData, Result};
 
-use crate::{
-    domain::{
-        models::labels::{Label, LabelName},
-        services::label_service::LabelService,
-        value_object::ValueObject,
-    },
-    infra::repository::labels::ILabelRepository,
+use crate::domain::{
+    models::labels::{label::Label, label_name::LabelName, label_repository::ILabelRepository},
+    services::label_service::LabelService,
+    value_object::ValueObject,
 };
 
 use super::label_application_error::LabelApplicationError;
@@ -48,7 +45,8 @@ impl<T: ILabelRepository> ILabelCreateApplicationService<T> for LabelCreateAppli
         } = command;
         let label_name = LabelName::new(label_name_string)
             .map_err(|e| LabelApplicationError::IllegalArgumentError(e.to_string()))?;
-        let new_label = Label::new(label_name).map_err(|e| LabelApplicationError::Unexpected(e.to_string()))?;
+        let new_label =
+            Label::new(label_name).map_err(|e| LabelApplicationError::Unexpected(e.to_string()))?;
 
         if self
             .label_service
@@ -74,7 +72,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        domain::models::labels::LabelId,
+        domain::models::labels::label_id::LabelId,
         infra::repository_impl::in_memory::labels::in_memory_label_repository::InMemoryLabelRepository,
     };
 
@@ -83,7 +81,8 @@ mod tests {
     #[tokio::test]
     async fn test_success_min_label_name() -> Result<()> {
         let repository = Arc::new(InMemoryLabelRepository::new());
-        let label_create_application_service = LabelCreateApplicationService::new(repository.clone());
+        let label_create_application_service =
+            LabelCreateApplicationService::new(repository.clone());
 
         // Is it possible to enter a 1-letter name?
         let command = LabelCreateCommand {
@@ -104,7 +103,8 @@ mod tests {
     #[tokio::test]
     async fn test_success_max_label_name() -> Result<()> {
         let repository = Arc::new(InMemoryLabelRepository::new());
-        let label_create_application_service = LabelCreateApplicationService::new(repository.clone());
+        let label_create_application_service =
+            LabelCreateApplicationService::new(repository.clone());
 
         // Is it possible to enter a 19-letter name?
         let command = LabelCreateCommand {
@@ -125,7 +125,8 @@ mod tests {
     #[tokio::test]
     async fn should_throw_error_if_label_name_is_too_short() -> Result<()> {
         let repository = Arc::new(InMemoryLabelRepository::new());
-        let label_create_application_service = LabelCreateApplicationService::new(repository.clone());
+        let label_create_application_service =
+            LabelCreateApplicationService::new(repository.clone());
 
         // try to enter empty name?
         let command = LabelCreateCommand {
@@ -146,7 +147,8 @@ mod tests {
     #[tokio::test]
     async fn should_throw_error_if_label_name_is_too_long() -> Result<()> {
         let repository = Arc::new(InMemoryLabelRepository::new());
-        let label_create_application_service = LabelCreateApplicationService::new(repository.clone());
+        let label_create_application_service =
+            LabelCreateApplicationService::new(repository.clone());
 
         // Is it possible to enter a 20-letter name?
         let command = LabelCreateCommand {
@@ -177,7 +179,8 @@ mod tests {
             );
         }
 
-        let label_create_application_service = LabelCreateApplicationService::new(repository.clone());
+        let label_create_application_service =
+            LabelCreateApplicationService::new(repository.clone());
 
         // Attempt to insert duplicate data
         let command = LabelCreateCommand {

@@ -1,7 +1,10 @@
+use std::collections::HashSet;
+
 use uuid::Uuid;
 
 use crate::domain::entity::Entity;
-use crate::domain::value_object::{Result, ValueObject};
+use crate::domain::models::labels::label::Label;
+use crate::domain::value_object::ValueObject;
 
 use super::todo_id::TodoId;
 use super::todo_text::TodoText;
@@ -12,23 +15,26 @@ pub struct Todo {
     todo_id: TodoId,
     pub todo_text: TodoText,
     pub completed: bool,
+    pub labels: HashSet<Label>,
 }
 
 impl Todo {
-    pub fn new(todo_text: TodoText) -> Result<Self> {
+    pub fn new(todo_text: TodoText, labels: HashSet<Label>) -> anyhow::Result<Self> {
         let todo_id = TodoId::new(Uuid::new_v4())?;
         Ok(Self {
             todo_id,
             todo_text,
             completed: false,
+            labels,
         })
     }
 
-    pub fn build(todo_id: TodoId, todo_text: TodoText, completed: bool) -> Self {
+    pub fn build(todo_id: TodoId, todo_text: TodoText, completed: bool, labels: HashSet<Label>) -> Self {
         Self {
             todo_id,
             todo_text,
             completed,
+            labels
         }
     }
 

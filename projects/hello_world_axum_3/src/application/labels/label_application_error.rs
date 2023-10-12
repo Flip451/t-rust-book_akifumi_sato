@@ -1,7 +1,8 @@
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::domain::models::labels::{Label, LabelId};
+use crate::domain::models::labels::{label::Label, label_id::LabelId};
+
 
 #[derive(Debug, Error, PartialEq)]
 pub enum LabelApplicationError {

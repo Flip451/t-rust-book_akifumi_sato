@@ -1,7 +1,4 @@
-mod user;
-mod user_id;
-mod user_name;
-
-pub use user::User;
-pub use user_id::UserId;
-pub use user_name::UserName;
+pub mod user;
+pub mod user_id;
+pub mod user_name;
+pub mod user_repository;

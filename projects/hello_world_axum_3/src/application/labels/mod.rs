@@ -6,8 +6,7 @@ pub mod label_delete_application_service;
 pub mod label_data;
 pub mod label_application_error;
 
-use anyhow::Result as AnyhowResult;
 
 use self::label_application_error::LabelApplicationError;
 
-pub type Result<T> = AnyhowResult<T, LabelApplicationError>;
+pub type Result<T> = anyhow::Result<T, LabelApplicationError>;

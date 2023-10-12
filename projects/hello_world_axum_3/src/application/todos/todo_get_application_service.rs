@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use axum::async_trait;
 
+use crate::domain::models::todos::{todo_id::TodoId, todo_repository::ITodoRepository};
+
 use super::{todo_application_error::TodoApplicationError, todo_data::TodoData, Result};
-use crate::{domain::models::todos::TodoId, infra::repository::todos::ITodoRepository};
 
 // trait of application service to get a todo
 #[async_trait]
@@ -47,12 +48,14 @@ impl<T: ITodoRepository> ITodoGetApplicationService<T> for TodoGetApplicationSer
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use anyhow::Result;
     use uuid::Uuid;
 
     use crate::{
         domain::{
-            models::todos::{Todo, TodoText},
+            models::todos::{todo::Todo, todo_text::TodoText},
             value_object::ValueObject,
         },
         infra::repository_impl::in_memory::todos::in_memory_todo_repository::InMemoryTodoRepository,
@@ -64,7 +67,7 @@ mod tests {
     async fn should_get_todo() -> Result<()> {
         let repository = Arc::new(InMemoryTodoRepository::new());
 
-        let todo = Todo::new(TodoText::new("test-1".to_string())?)?;
+        let todo = Todo::new(TodoText::new("test-1".to_string())?, HashSet::new())?;
         let todo_id = todo.todo_id().clone();
 
         // Put the data in advance

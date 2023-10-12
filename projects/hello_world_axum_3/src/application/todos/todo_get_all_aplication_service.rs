@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use axum::async_trait;
 
+use crate::domain::models::todos::todo_repository::ITodoRepository;
+
 use super::{todo_application_error::TodoApplicationError, todo_data::TodoData, Result};
-use crate::infra::repository::todos::ITodoRepository;
 
 // trait of application service to get todos
 #[async_trait]
@@ -40,11 +41,13 @@ impl<T: ITodoRepository> ITodoGetAllApplicationService<T> for TodoGetAllApplicat
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use anyhow::Result;
 
     use crate::{
         domain::{
-            models::todos::{Todo, TodoText},
+            models::todos::{todo::Todo, todo_text::TodoText},
             value_object::ValueObject,
         },
         infra::repository_impl::in_memory::todos::in_memory_todo_repository::InMemoryTodoRepository,
@@ -65,7 +68,7 @@ mod tests {
         assert!(todos.is_empty());
 
         // 2. Put the first data
-        let todo_1 = Todo::new(TodoText::new("test-1".to_string())?)?;
+        let todo_1 = Todo::new(TodoText::new("test-1".to_string())?, HashSet::new())?;
         let todo_id = todo_1.todo_id().clone();
         {
             let mut store = repository.write_store_ref();
@@ -79,7 +82,7 @@ mod tests {
         assert_eq!(vec![TodoData::new(todo_1.clone())], todos);
 
         // 4. Put the second data
-        let todo_2 = Todo::new(TodoText::new("test-2".to_string())?)?;
+        let todo_2 = Todo::new(TodoText::new("test-2".to_string())?, HashSet::new())?;
         let todo_id = todo_2.todo_id().clone();
         {
             let mut store = repository.write_store_ref();
@@ -93,10 +96,7 @@ mod tests {
         // Sort todos alphabetically
         todos.sort_by(|a, b| a.todo_text.cmp(&b.todo_text));
 
-        assert_eq!(
-            vec![TodoData::new(todo_1), TodoData::new(todo_2)],
-            todos
-        );
+        assert_eq!(vec![TodoData::new(todo_1), TodoData::new(todo_2)], todos);
 
         Ok(())
     }
