@@ -39,16 +39,19 @@ const TodoApp: FC = () => {
   }
 
   const onSubmitCreateLabel = async (newLabel: CreateLabelPayload) => {
-    if (!labels.some((label) => label.name === newLabel.name)) {
-      const res = await createLabel(newLabel)
-      setLabels([...labels, res])
+    if (labels.every((label) => label.name != newLabel.name)) {
+      await createLabel(newLabel)
+      const labels = await getAllLabel();
+      setLabels(labels)
     }
   }
 
   const onDeleteLabel = async (id: LabelId) => {
     await deleteLabel(id)
-    setLabels((prev) => prev.filter((label) => label.id != id))
+    const labels = await getAllLabel();
+    setLabels(labels)
   }
+
   const dispTodo = filterLabelId ? todos.filter((todo) => todo.labels.some((label) => label.id === filterLabelId)) : todos
 
   useEffect(() => {
@@ -106,7 +109,6 @@ const TodoApp: FC = () => {
         <Box maxWidth={700} width="100%">
           <Stack spacing={5}>
             <TodoForm onSubmit={onSubmit} />
-            {/* <TodoList onUpdate={onUpdate} onDelete={onDelete} todos={todos} /> */}
             <TodoList onUpdate={onUpdate} onDelete={onDelete} todos={dispTodo} />
           </Stack>
         </Box>

@@ -1,8 +1,7 @@
 import { FC, useState } from "react"
 import { CreateLabelPayload, Label, LabelId } from "../types/label"
-import { Box, IconButton, List, ListItem, ListItemButton, ListSubheader, Modal, Stack, TextField, Typography } from "@mui/material"
+import { Button, Box, IconButton, List, ListItem, ListItemButton, ListSubheader, Modal, Stack, TextField, Typography } from "@mui/material"
 import { modalInnerStyle } from "../styles/modal"
-import { Button } from "@mui/base"
 import { Delete as DeleteIcon, Edit as EditIcon, Label as LabelIcon } from "@mui/icons-material"
 
 type Props = {
@@ -24,8 +23,8 @@ const SideNav: FC<Props> = ({
     const [openLabelModal, setOpenLabelModal] = useState(false)
 
     const onSubmit = () => {
-        setEditName("")
         onSubmitCreateLabel({ name: editName })
+        setEditName("")
     }
 
     return (
@@ -61,10 +60,11 @@ const SideNav: FC<Props> = ({
                                 label="new label"
                                 variant="filled"
                                 fullWidth
+                                value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
                             />
                             <Box textAlign="right">
-                                <Button onClick={onSubmit}>submit</Button>
+                                <Button onClick={onSubmit} color="info">submit</Button>
                             </Box>
                         </Stack>
                         <Stack spacing={1}>
@@ -78,7 +78,7 @@ const SideNav: FC<Props> = ({
                                     <IconButton size="small" onClick={() => onDeleteLabel(label.id)}>
                                         <DeleteIcon fontSize="small" />
                                     </IconButton>
-                                    <span>{label.name}</span>
+                                    <Typography variant="caption" fontSize={18}>{label.name}</Typography>
                                 </Stack>
                             ))}
                         </Stack>
