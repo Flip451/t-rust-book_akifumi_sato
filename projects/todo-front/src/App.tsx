@@ -1,14 +1,19 @@
 import { useState, FC, useEffect } from 'react'
 import 'modern-css-reset'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { CreateTodoPayload, Todo, TodoId } from './types/todo'
+import { CreateTodoPayload, Todo, TodoId, UpdateTodoPayload } from './types/todo'
 import { Box, Stack, Typography } from '@mui/material'
 import TodoForm from './components/TodoForm'
 import TodoList from './components/TodoList'
 import { createTodo, deleteTodo, getAllTodo, updateTodo } from './lib/api/todo'
+import { CreateLabelPayload, Label, LabelId } from './types/label'
+import { createLabel, deleteLabel, getAllLabel } from './lib/api/label'
+import SideNav from './components/SideNav'
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([])
+  const [labels, setLabels] = useState<Label[]>([])
+  const [filterLabelId, setFilterLabelId] = useState<LabelId | null>(null)
 
   const onSubmit = async (payload: CreateTodoPayload) => {
     if (!payload.text) return
@@ -17,7 +22,7 @@ const TodoApp: FC = () => {
     setTodos(todos)
   }
 
-  const onUpdate = async (newTodo: Todo) => {
+  const onUpdate = async (newTodo: UpdateTodoPayload) => {
     await updateTodo(newTodo)
     const todos = await getAllTodo();
     setTodos(todos)
@@ -29,10 +34,32 @@ const TodoApp: FC = () => {
     setTodos(todos)
   }
 
+  const onSelectLabel = (label: Label | null) => {
+    setFilterLabelId(label?.id ?? null)
+  }
+
+  const onSubmitCreateLabel = async (newLabel: CreateLabelPayload) => {
+    if (labels.every((label) => label.name != newLabel.name)) {
+      await createLabel(newLabel)
+      const labels = await getAllLabel();
+      setLabels(labels)
+    }
+  }
+
+  const onDeleteLabel = async (id: LabelId) => {
+    await deleteLabel(id)
+    const labels = await getAllLabel();
+    setLabels(labels)
+  }
+
+  const dispTodo = filterLabelId ? todos.filter((todo) => todo.labels.some((label) => label.id === filterLabelId)) : todos
+
   useEffect(() => {
     (async () => {
       const todos = await getAllTodo();
       setTodos(todos)
+      const labels = await getAllLabel()
+      setLabels(labels)
     })()
   }, [])
 
@@ -54,6 +81,23 @@ const TodoApp: FC = () => {
       >
         <Typography variant="h1">Todo App</Typography>
       </Box>
+      <Box sx={{
+        backgroundColor: 'white',
+        borderRight: '1px solid gray',
+        position: 'fixed',
+        height: 'calc(100% - 80px)',
+        width: 200,
+        zIndex: 2,
+        left: 0,
+      }}>
+        <SideNav
+          labels={labels}
+          onSelectLabel={onSelectLabel}
+          filterLabelId={filterLabelId}
+          onSubmitCreateLabel={onSubmitCreateLabel}
+          onDeleteLabel={onDeleteLabel}
+        />
+      </Box>
       <Box
         sx={{
           display: 'flex',
@@ -64,8 +108,8 @@ const TodoApp: FC = () => {
       >
         <Box maxWidth={700} width="100%">
           <Stack spacing={5}>
-            <TodoForm onSubmit={onSubmit} />
-            <TodoList onUpdate={onUpdate} onDelete={onDelete} todos={todos} />
+            <TodoForm onSubmit={onSubmit} labels={labels}/>
+            <TodoList onUpdate={onUpdate} onDelete={onDelete} todos={dispTodo} labels={labels}/>
           </Stack>
         </Box>
       </Box>

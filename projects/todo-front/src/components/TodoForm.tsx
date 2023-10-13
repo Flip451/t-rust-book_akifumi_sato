@@ -1,19 +1,28 @@
 import { FC, useState } from 'react'
 import { CreateTodoPayload } from '../types/todo'
-import { Box, Button, Grid, Paper, TextField } from '@mui/material'
+import { Box, Button, Checkbox, Chip, FormControlLabel, Grid, Modal, Paper, Stack, TextField } from '@mui/material'
+import { Label } from '../types/label'
+import { modalInnerStyle } from '../styles/modal'
+import { toggleLabels } from '../lib/toggleLabels'
 
 type Props = {
     onSubmit: (newTodo: CreateTodoPayload) => void
+    labels: Label[]
 }
 
-const TodoForm: FC<Props> = ({ onSubmit }) => {
+const TodoForm: FC<Props> = ({ onSubmit, labels }) => {
     const [editText, setEditText] = useState('')
+    const [editLabels, setEditLabels] = useState<Label[]>([])
+    const [openLabelModal, setOpenLabelModal] = useState(false)
 
     const addTodoHandler = async () => {
         if (!editText) return
+
         onSubmit({
             text: editText,
+            label_ids: editLabels.map((label) => label.id)
         })
+
         setEditText('')
     }
 
@@ -35,12 +44,36 @@ const TodoForm: FC<Props> = ({ onSubmit }) => {
                         >
                         </TextField>
                     </Grid>
-                    <Grid item xs={9} />
+                    <Grid item xs={12}>
+                        <Stack direction="row" spacing={1}>
+                            {editLabels.map((label) => (<Chip key={label.id} label={label.name} />))}
+                        </Stack>
+                    </Grid>
+                    <Grid item xs={4}>
+                        <Button onClick={() => setOpenLabelModal(true)} fullWidth color='secondary'>
+                            select label
+                        </Button>
+                    </Grid>
+                    <Grid item xs={5} />
                     <Grid item xs={3} >
                         <Button onClick={addTodoHandler} fullWidth>
                             add todo
                         </Button>
                     </Grid>
+                    <Modal open={openLabelModal} onClose={() => setOpenLabelModal(false)}>
+                        <Box sx={modalInnerStyle}>
+                            <Stack>
+                                {labels.map((label) => (
+                                    <FormControlLabel
+                                        key={label.id}
+                                        control={<Checkbox checked={editLabels.includes(label)} />}
+                                        label={label.name}
+                                        onChange={() => setEditLabels((prev) => toggleLabels(prev, label))}
+                                    />
+                                ))}
+                            </Stack>
+                        </Box>
+                    </Modal>
                 </Grid>
             </Box>
         </Paper>

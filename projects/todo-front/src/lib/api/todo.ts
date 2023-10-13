@@ -1,4 +1,4 @@
-import { CreateTodoPayload, Todo, TodoId } from "../../types/todo";
+import { CreateTodoPayload, Todo, TodoId, UpdateTodoPayload } from "../../types/todo";
 
 export const createTodo = async (payload: CreateTodoPayload) => {
     const res = await fetch('http://localhost:3000/todos', {
@@ -25,8 +25,8 @@ export const getAllTodo = async () => {
     return json
 }
 
-export const updateTodo = async (todo: Todo) => {
-    const { id, ...updateTodo } = todo
+export const updateTodo = async (payload: UpdateTodoPayload) => {
+    const { id, ...updateTodo } = payload
     const res = await fetch(`http://localhost:3000/todos/${id}`, {
         method: 'PATCH',
         headers: {
