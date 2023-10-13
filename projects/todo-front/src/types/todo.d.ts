@@ -16,3 +16,10 @@ export type CreateTodoPayload = {
     text: TodoText
     label_ids: LabelId[]
 }
+
+export type UpdateTodoPayload = {
+    id: TodoText
+    text?: TodoText
+    completed?: boolean
+    label_ids?: LabelId[]
+}

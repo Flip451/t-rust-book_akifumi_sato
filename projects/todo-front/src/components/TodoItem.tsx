@@ -1,17 +1,28 @@
-import { FC, useState } from "react"
-import { Todo, TodoId } from "../types/todo"
-import { Box, Button, Card, Checkbox, Grid, Modal, Stack, TextField, Typography } from "@mui/material"
+import { FC, useEffect, useState } from "react"
+import { Todo, TodoId, UpdateTodoPayload } from "../types/todo"
+import { Box, Button, Card, Checkbox, Chip, FormControl, FormControlLabel, Grid, Modal, Stack, TextField, Typography } from "@mui/material"
 import { modalInnerStyle } from "../styles/modal"
+import { Label } from "../types/label"
+import { CheckBox } from "@mui/icons-material"
+import { toggleLabels } from "../lib/toggleLabels"
 
 type props = {
     todo: Todo
-    onUpdate: (todo: Todo) => void
+    labels: Label[]
+    onUpdate: (todo: UpdateTodoPayload) => void
     onDelete: (id: TodoId) => void
 }
 
-const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
+const TodoItem: FC<props> = ({ todo, labels, onUpdate, onDelete }) => {
     const [editing, setEditing] = useState(false)
     const [editText, setEditText] = useState("")
+    const [editLabels, setEditLabels] = useState<Label[]>([])
+
+    // todo 変更時に初期化
+    useEffect(() => {
+        setEditText(todo.text)
+        setEditLabels(todo.labels)
+    }, [todo, editing])
 
     const handleCompletedCheckbox = (todo: Todo) => {
         onUpdate({
@@ -39,6 +50,7 @@ const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
         onUpdate({
             ...todo,
             text: editText,
+            label_ids: editLabels.map((label) => label.id)
         })
         setEditing(false)
     }
@@ -58,6 +70,11 @@ const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
                             <Typography variant="caption" fontSize={18}>
                                 {todo.text}
                             </Typography>
+                        </Stack>
+                        <Stack direction="row" spacing={1} >
+                            {todo.labels.map((label) => (
+                                <Chip key={label.id} label={label.name} size="small" />
+                            ))}
                         </Stack>
                     </Grid>
                     <Grid item xs={2}>
@@ -81,6 +98,21 @@ const TodoItem: FC<props> = ({ todo, onUpdate, onDelete }) => {
                             defaultValue={todo.text}
                             onChange={(e) => setEditText(e.target.value)}
                         />
+                        <Stack>
+                            <Typography variant="subtitle1">Lables</Typography>
+                            {labels.map((label) => (
+                                <FormControlLabel
+                                    key={label.id}
+                                    control={
+                                        <Checkbox
+                                            defaultChecked={todo.labels.some((todoLabel) => todoLabel.id == label.id)}
+                                        />
+                                    }
+                                    label={label.name}
+                                    onChange={() => setEditLabels((prev) => toggleLabels(prev, label))}
+                                />
+                            ))}
+                        </Stack>
                         <Button onClick={handleSubmitButton} color="info">
                             SUBMIT
                         </Button>

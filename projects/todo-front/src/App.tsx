@@ -1,7 +1,7 @@
 import { useState, FC, useEffect } from 'react'
 import 'modern-css-reset'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { CreateTodoPayload, Todo, TodoId } from './types/todo'
+import { CreateTodoPayload, Todo, TodoId, UpdateTodoPayload } from './types/todo'
 import { Box, Stack, Typography } from '@mui/material'
 import TodoForm from './components/TodoForm'
 import TodoList from './components/TodoList'
@@ -22,7 +22,7 @@ const TodoApp: FC = () => {
     setTodos(todos)
   }
 
-  const onUpdate = async (newTodo: Todo) => {
+  const onUpdate = async (newTodo: UpdateTodoPayload) => {
     await updateTodo(newTodo)
     const todos = await getAllTodo();
     setTodos(todos)
@@ -109,7 +109,7 @@ const TodoApp: FC = () => {
         <Box maxWidth={700} width="100%">
           <Stack spacing={5}>
             <TodoForm onSubmit={onSubmit} labels={labels}/>
-            <TodoList onUpdate={onUpdate} onDelete={onDelete} todos={dispTodo} />
+            <TodoList onUpdate={onUpdate} onDelete={onDelete} todos={dispTodo} labels={labels}/>
           </Stack>
         </Box>
       </Box>
